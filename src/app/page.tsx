@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWorkoutStore } from '@/store/workoutStore'
 import { WorkoutCard } from '@/components/workout/WorkoutCard'
@@ -41,10 +41,16 @@ function newWorkout(type: WorkoutType): Workout {
 
 export default function HomePage() {
   const router = useRouter()
-  const { workouts, sessions, addWorkout, deleteWorkout, clearHistory } = useWorkoutStore()
+  const { workouts, sessions, addWorkout, clearHistory } = useWorkoutStore()
   const [showPicker, setShowPicker] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
-  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+
+  const filtered = useMemo(() => {
+    if (!query.trim()) return workouts
+    const q = query.toLowerCase()
+    return workouts.filter((w) => w.name.toLowerCase().includes(q))
+  }, [workouts, query])
 
   const handleCreate = (type: WorkoutType) => {
     const w = newWorkout(type)
@@ -53,20 +59,11 @@ export default function HomePage() {
     router.push(`/workout/${w.id}`)
   }
 
-  const handleDelete = (id: string) => {
-    setDeleteTargetId(id)
-  }
-
-  const confirmDelete = () => {
-    if (deleteTargetId) deleteWorkout(deleteTargetId)
-    setDeleteTargetId(null)
-  }
-
   return (
     <div className="min-h-[100dvh] flex flex-col" style={{ backgroundColor: '#0c0c0f' }}>
       {/* Header */}
-      <header className="px-6 pt-safe pt-8 pb-6" style={{ paddingTop: 'max(env(safe-area-inset-top), 32px)' }}>
-        <div className="flex items-end justify-between">
+      <header className="px-6" style={{ paddingTop: 'max(env(safe-area-inset-top), 32px)', paddingBottom: 16 }}>
+        <div className="flex items-end justify-between mb-5">
           <div>
             <p className="text-white/25 text-xs font-semibold tracking-widest uppercase mb-1">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
@@ -84,9 +81,34 @@ export default function HomePage() {
             New
           </button>
         </div>
+
+        {/* Search */}
+        {workouts.length > 0 && (
+          <div className="relative">
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+              width="15" height="15" viewBox="0 0 24 24" fill="none"
+              stroke="rgba(255,255,255,0.25)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search workouts…"
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white placeholder-white/25 focus:outline-none focus:ring-1"
+              style={{
+                backgroundColor: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                caretColor: '#f0407a',
+              }}
+            />
+          </div>
+        )}
       </header>
 
-      <div className="h-px mx-6 mb-6" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
+      <div className="h-px mx-6" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
 
       {/* List */}
       <main className="flex-1 px-6 pb-12">
@@ -100,14 +122,12 @@ export default function HomePage() {
               Create your first workout
             </button>
           </div>
+        ) : filtered.length === 0 ? (
+          <p className="text-white/20 text-sm py-10 text-center">No workouts match "{query}"</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {workouts.map((workout) => (
-              <WorkoutCard
-                key={workout.id}
-                workout={workout}
-                onDelete={handleDelete}
-              />
+          <div>
+            {filtered.map((workout) => (
+              <WorkoutCard key={workout.id} workout={workout} />
             ))}
           </div>
         )}
@@ -116,7 +136,7 @@ export default function HomePage() {
         {sessions.length > 0 && (
           <div className="mt-10">
             <button
-              className="flex items-center justify-between w-full mb-3 group"
+              className="flex items-center justify-between w-full mb-3"
               onClick={() => setShowHistory((v) => !v)}
             >
               <span className="text-white/25 text-xs font-semibold tracking-widest uppercase">History</span>
@@ -149,39 +169,6 @@ export default function HomePage() {
           </div>
         )}
       </main>
-
-      {/* Delete confirm sheet */}
-      {deleteTargetId && (
-        <div
-          className="fixed inset-0 z-50 flex items-end"
-          style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
-          onClick={() => setDeleteTargetId(null)}
-        >
-          <div
-            className="w-full rounded-t-3xl px-6 pt-5"
-            style={{ backgroundColor: '#13131a', paddingBottom: 'max(env(safe-area-inset-bottom), 28px)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} />
-            <p className="text-white text-lg font-semibold text-center mb-1">Delete workout?</p>
-            <p className="text-white/35 text-sm text-center mb-6">This cannot be undone.</p>
-            <button
-              onClick={confirmDelete}
-              className="w-full py-4 rounded-2xl font-semibold text-sm mb-3 transition-all active:scale-98"
-              style={{ backgroundColor: 'rgba(239,68,68,0.18)', color: '#f87171' }}
-            >
-              Delete
-            </button>
-            <button
-              onClick={() => setDeleteTargetId(null)}
-              className="w-full py-3 text-sm transition-colors"
-              style={{ color: 'rgba(255,255,255,0.35)' }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Type picker bottom sheet */}
       {showPicker && (
