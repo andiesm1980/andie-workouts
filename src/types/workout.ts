@@ -4,6 +4,15 @@ export type Phase = 'idle' | 'warmup' | 'work' | 'rest' | 'break' | 'cooldown' |
 export interface Exercise {
   id: string
   name: string
+  restTime?: number // overrides workout.restTime when set
+}
+
+export interface CompletedSession {
+  id: string
+  workoutId: string
+  workoutName: string
+  date: number        // timestamp ms
+  durationSeconds: number
 }
 
 export interface ExerciseGroup {

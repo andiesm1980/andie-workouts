@@ -2,7 +2,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Workout } from '@/types/workout'
+import type { Workout, CompletedSession } from '@/types/workout'
 
 const DEFAULT_WORKOUTS: Workout[] = [
   {
@@ -67,15 +67,22 @@ const DEFAULT_WORKOUTS: Workout[] = [
 
 interface WorkoutStore {
   workouts: Workout[]
+  sessions: CompletedSession[]
+  soundEnabled: boolean
   addWorkout: (workout: Workout) => void
   updateWorkout: (id: string, updates: Partial<Workout>) => void
   deleteWorkout: (id: string) => void
+  recordSession: (session: Omit<CompletedSession, 'id'>) => void
+  clearHistory: () => void
+  setSoundEnabled: (v: boolean) => void
 }
 
 export const useWorkoutStore = create<WorkoutStore>()(
   persist(
     (set) => ({
       workouts: DEFAULT_WORKOUTS,
+      sessions: [],
+      soundEnabled: true,
       addWorkout: (workout) =>
         set((state) => ({ workouts: [workout, ...state.workouts] })),
       updateWorkout: (id, updates) =>
@@ -87,13 +94,20 @@ export const useWorkoutStore = create<WorkoutStore>()(
       deleteWorkout: (id) =>
         set((state) => ({
           workouts: state.workouts.filter((w) => w.id !== id),
+          sessions: state.sessions.filter((s) => s.workoutId !== id),
         })),
+      recordSession: (session) =>
+        set((state) => ({
+          sessions: [{ ...session, id: crypto.randomUUID() }, ...state.sessions].slice(0, 100),
+        })),
+      clearHistory: () => set({ sessions: [] }),
+      setSoundEnabled: (v) => set({ soundEnabled: v }),
     }),
     {
       name: 'my-workouts-store',
-      version: 3,
+      version: 4,
       migrate: (persisted: unknown, fromVersion: number) => {
-        const state = persisted as { workouts: any[] }
+        const state = persisted as { workouts: any[]; sessions?: any[]; soundEnabled?: boolean }
 
         if (fromVersion < 2) {
           state.workouts = (state.workouts ?? []).map((w: any) => ({
@@ -118,6 +132,11 @@ export const useWorkoutStore = create<WorkoutStore>()(
               ),
             }
           })
+        }
+
+        if (fromVersion < 4) {
+          state.sessions = state.sessions ?? []
+          state.soundEnabled = state.soundEnabled ?? true
         }
 
         return state

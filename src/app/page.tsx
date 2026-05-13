@@ -7,6 +7,21 @@ import { WorkoutCard } from '@/components/workout/WorkoutCard'
 import { generateId } from '@/lib/workoutUtils'
 import type { Workout, WorkoutType } from '@/types/workout'
 
+function relativeDate(ts: number): string {
+  const diff = Date.now() - ts
+  const days = Math.floor(diff / 86400000)
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  if (days < 7) return `${days}d ago`
+  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function fmtDuration(sec: number): string {
+  const m = Math.floor(sec / 60)
+  const s = sec % 60
+  return m > 0 ? `${m}m ${s > 0 ? s + 's' : ''}`.trim() : `${s}s`
+}
+
 function newWorkout(type: WorkoutType): Workout {
   return {
     id: generateId(),
@@ -26,8 +41,9 @@ function newWorkout(type: WorkoutType): Workout {
 
 export default function HomePage() {
   const router = useRouter()
-  const { workouts, addWorkout, deleteWorkout } = useWorkoutStore()
+  const { workouts, sessions, addWorkout, deleteWorkout, clearHistory } = useWorkoutStore()
   const [showPicker, setShowPicker] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
 
   const handleCreate = (type: WorkoutType) => {
@@ -93,6 +109,43 @@ export default function HomePage() {
                 onDelete={handleDelete}
               />
             ))}
+          </div>
+        )}
+
+        {/* Session history */}
+        {sessions.length > 0 && (
+          <div className="mt-10">
+            <button
+              className="flex items-center justify-between w-full mb-3 group"
+              onClick={() => setShowHistory((v) => !v)}
+            >
+              <span className="text-white/25 text-xs font-semibold tracking-widest uppercase">History</span>
+              <span className="text-white/20 text-xs">{showHistory ? '▲' : '▼'}</span>
+            </button>
+
+            {showHistory && (
+              <div>
+                {sessions.slice(0, 20).map((s) => (
+                  <div
+                    key={s.id}
+                    className="flex items-center justify-between py-3"
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                  >
+                    <div>
+                      <p className="text-white/70 text-sm font-medium">{s.workoutName}</p>
+                      <p className="text-white/25 text-xs mt-0.5">{relativeDate(s.date)}</p>
+                    </div>
+                    <span className="text-white/30 text-sm tabular-nums">{fmtDuration(s.durationSeconds)}</span>
+                  </div>
+                ))}
+                <button
+                  onClick={() => { if (window.confirm('Clear all history?')) clearHistory() }}
+                  className="mt-4 text-white/20 text-xs hover:text-white/40 transition-colors"
+                >
+                  Clear history
+                </button>
+              </div>
+            )}
           </div>
         )}
       </main>

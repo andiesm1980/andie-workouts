@@ -23,7 +23,9 @@ function DragDots() {
 
 export function ExercisesTab({ workout, onChange }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingRestId, setEditingRestId] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const restInputRef = useRef<HTMLInputElement>(null)
   const groups = workout.exerciseGroups ?? []
 
   const updateGroups = (next: ExerciseGroup[]) => onChange({ exerciseGroups: next })
@@ -50,10 +52,10 @@ export function ExercisesTab({ workout, onChange }: Props) {
     setTimeout(() => inputRef.current?.focus(), 50)
   }
 
-  const updateName = (groupId: string, exId: string, name: string) => {
+  const updateExercise = (groupId: string, exId: string, updates: Partial<Exercise>) => {
     const group = groups.find((g) => g.id === groupId)
     if (!group) return
-    updateGroup(groupId, group.exercises.map((e) => (e.id === exId ? { ...e, name } : e)))
+    updateGroup(groupId, group.exercises.map((e) => (e.id === exId ? { ...e, ...updates } : e)))
   }
 
   const removeExercise = (groupId: string, exId: string) => {
@@ -67,7 +69,7 @@ export function ExercisesTab({ workout, onChange }: Props) {
     if (!name.trim()) {
       removeExercise(groupId, exId)
     } else {
-      updateName(groupId, exId, name.trim())
+      updateExercise(groupId, exId, { name: name.trim() })
     }
     setEditingId(null)
   }
@@ -109,47 +111,98 @@ export function ExercisesTab({ workout, onChange }: Props) {
             <p className="text-white/20 text-sm py-3 pl-1">No exercises yet</p>
           )}
 
-          {group.exercises.map((ex) => (
-            <div
-              key={ex.id}
-              className="flex items-center gap-4 py-3.5"
-              style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-            >
-              <DragDots />
+          {group.exercises.map((ex, exIdx) => {
+            const isLastEx = exIdx === group.exercises.length - 1
+            const hasCustomRest = ex.restTime !== undefined
+            return (
+              <div key={ex.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <div className="flex items-center gap-4 py-3.5">
+                  <DragDots />
 
-              {editingId === ex.id ? (
-                <input
-                  ref={inputRef}
-                  className="flex-1 bg-transparent text-white text-base focus:outline-none border-b border-white/30 pb-0.5"
-                  defaultValue={ex.name}
-                  placeholder="Exercise name"
-                  onBlur={(e) => commitEdit(group.id, ex.id, e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') commitEdit(group.id, ex.id, e.currentTarget.value)
-                    if (e.key === 'Escape') setEditingId(null)
-                  }}
-                  autoFocus
-                />
-              ) : (
-                <button
-                  className="flex-1 text-left text-white text-base hover:text-white/80 transition-colors"
-                  onClick={() => setEditingId(ex.id)}
-                >
-                  {ex.name || <span className="text-white/30 italic">Unnamed exercise</span>}
-                </button>
-              )}
+                  {editingId === ex.id ? (
+                    <input
+                      ref={inputRef}
+                      className="flex-1 bg-transparent text-white text-base focus:outline-none border-b border-white/30 pb-0.5"
+                      defaultValue={ex.name}
+                      placeholder="Exercise name"
+                      onBlur={(e) => commitEdit(group.id, ex.id, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitEdit(group.id, ex.id, e.currentTarget.value)
+                        if (e.key === 'Escape') setEditingId(null)
+                      }}
+                      autoFocus
+                    />
+                  ) : (
+                    <button
+                      className="flex-1 text-left text-white text-base hover:text-white/80 transition-colors"
+                      onClick={() => setEditingId(ex.id)}
+                    >
+                      {ex.name || <span className="text-white/30 italic">Unnamed exercise</span>}
+                    </button>
+                  )}
 
-              <button
-                onClick={() => removeExercise(group.id, ex.id)}
-                className="text-white/15 hover:text-red-400/60 transition-colors p-1 shrink-0"
-                aria-label="Remove exercise"
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-          ))}
+                  {/* Per-exercise rest time (only between exercises, not after last) */}
+                  {!isLastEx && (
+                    <button
+                      onClick={() => { setEditingRestId(ex.id); setTimeout(() => restInputRef.current?.focus(), 50) }}
+                      className="shrink-0 px-2 py-1 rounded-lg text-xs tabular-nums transition-colors"
+                      style={{
+                        backgroundColor: hasCustomRest ? 'rgba(0,217,160,0.12)' : 'rgba(255,255,255,0.05)',
+                        color: hasCustomRest ? '#00d9a0' : 'rgba(255,255,255,0.25)',
+                      }}
+                    >
+                      {hasCustomRest ? `${ex.restTime}s` : `${workout.restTime}s`}
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => removeExercise(group.id, ex.id)}
+                    className="text-white/15 hover:text-red-400/60 transition-colors p-1 shrink-0"
+                    aria-label="Remove exercise"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Inline rest time editor */}
+                {!isLastEx && editingRestId === ex.id && (
+                  <div className="flex items-center gap-3 pb-3 pl-10">
+                    <span className="text-white/30 text-xs">Rest after this exercise:</span>
+                    <input
+                      ref={restInputRef}
+                      type="number"
+                      min={0}
+                      max={300}
+                      defaultValue={ex.restTime ?? workout.restTime}
+                      className="w-16 bg-transparent text-white text-sm text-center focus:outline-none border-b border-white/30"
+                      onBlur={(e) => {
+                        const val = parseInt(e.target.value)
+                        if (!isNaN(val) && val >= 0) {
+                          updateExercise(group.id, ex.id, { restTime: val })
+                        }
+                        setEditingRestId(null)
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') e.currentTarget.blur()
+                        if (e.key === 'Escape') setEditingRestId(null)
+                      }}
+                    />
+                    <span className="text-white/30 text-xs">sec</span>
+                    {hasCustomRest && (
+                      <button
+                        onClick={() => { updateExercise(group.id, ex.id, { restTime: undefined }); setEditingRestId(null) }}
+                        className="text-white/25 text-xs hover:text-white/50 transition-colors"
+                      >
+                        reset
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
 
           {/* Add exercise within group */}
           <button

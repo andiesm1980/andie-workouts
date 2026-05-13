@@ -7,6 +7,7 @@ import { useWorkoutStore } from '@/store/workoutStore'
 import { TimerSettingsTab } from './TimerSettingsTab'
 import { ExercisesTab } from './ExercisesTab'
 import { computeTotalTime, formatDuration } from '@/lib/workoutUtils'
+import { shareUrl } from '@/lib/shareWorkout'
 
 type Tab = 'timer' | 'exercises'
 
@@ -21,6 +22,7 @@ export function WorkoutDetail({ workout: initial }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('timer')
   const [editingName, setEditingName] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
 
   const update = useCallback(
@@ -39,6 +41,17 @@ export function WorkoutDetail({ workout: initial }: Props) {
   const confirmDelete = () => {
     deleteWorkout(workout.id)
     router.push('/')
+  }
+
+  const handleShare = async () => {
+    const url = shareUrl(workout)
+    if (navigator.share) {
+      await navigator.share({ title: workout.name, text: `Check out my workout: ${workout.name}`, url }).catch(() => {})
+    } else {
+      await navigator.clipboard.writeText(url).catch(() => {})
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2000)
+    }
   }
 
   const tabs: Tab[] = workout.type === 'circuit' ? ['timer', 'exercises'] : ['timer']
@@ -91,6 +104,23 @@ export function WorkoutDetail({ workout: initial }: Props) {
 
           {/* Actions */}
           <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={handleShare}
+              className="p-2 transition-colors"
+              style={{ color: shareCopied ? '#00d9a0' : 'rgba(255,255,255,0.35)' }}
+              aria-label="Share workout"
+            >
+              {shareCopied ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </svg>
+              )}
+            </button>
             <button
               onClick={() => router.push('/')}
               className="p-2 text-white/40 hover:text-white/70 transition-colors"

@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTimer } from '@/hooks/useTimer'
 import { useWakeLock } from '@/hooks/useWakeLock'
-import { initAudio } from '@/lib/audio'
+import { initAudio, setSoundEnabled } from '@/lib/audio'
 import { haptic } from '@/lib/haptics'
+import { useWorkoutStore } from '@/store/workoutStore'
 import type { Workout, Phase } from '@/types/workout'
 
 function formatTime(seconds: number) {
@@ -38,6 +39,20 @@ export function TimerDisplay({ workout }: Props) {
   const timer = useTimer(workout)
   useWakeLock(timer.isRunning)
   const [showQuitConfirm, setShowQuitConfirm] = useState(false)
+  const { soundEnabled, setSoundEnabled: storeSoundEnabled, recordSession } = useWorkoutStore()
+  const sessionRecorded = useRef(false)
+
+  // Sync sound flag into audio module
+  useEffect(() => { setSoundEnabled(soundEnabled) }, [soundEnabled])
+
+  // Record session once when complete
+  useEffect(() => {
+    if (timer.isComplete && !sessionRecorded.current) {
+      sessionRecorded.current = true
+      const total = timer.segments.reduce((s, seg) => s + seg.duration, 0)
+      recordSession({ workoutId: workout.id, workoutName: workout.name, date: Date.now(), durationSeconds: total })
+    }
+  }, [timer.isComplete])
 
   const { color, label } = PHASE_CONFIG[timer.phase]
 
@@ -46,6 +61,8 @@ export function TimerDisplay({ workout }: Props) {
     haptic('tap')
     timer.toggle()
   }
+
+  const toggleSound = () => storeSoundEnabled(!soundEnabled)
 
   const handleSkipNext = () => {
     haptic('tap')
@@ -92,16 +109,37 @@ export function TimerDisplay({ workout }: Props) {
         className="shrink-0 flex items-center justify-between px-5"
         style={{ paddingTop: 'max(env(safe-area-inset-top), 18px)', paddingBottom: 10 }}
       >
-        <button
-          onClick={() => setShowQuitConfirm(true)}
-          className="w-9 h-9 flex items-center justify-center rounded-full transition-colors active:scale-90"
-          style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}
-          aria-label="Close"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowQuitConfirm(true)}
+            className="w-9 h-9 flex items-center justify-center rounded-full transition-colors active:scale-90"
+            style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}
+            aria-label="Close"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+          <button
+            onClick={toggleSound}
+            className="w-9 h-9 flex items-center justify-center rounded-full transition-colors active:scale-90"
+            style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}
+            aria-label={soundEnabled ? 'Mute' : 'Unmute'}
+          >
+            {soundEnabled ? (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+              </svg>
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                <line x1="23" y1="9" x2="17" y2="15" />
+                <line x1="17" y1="9" x2="23" y2="15" />
+              </svg>
+            )}
+          </button>
+        </div>
 
         <span className="text-white/30 text-sm truncate max-w-[160px]">{workout.name}</span>
 

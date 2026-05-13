@@ -1,6 +1,10 @@
 let audioCtx: AudioContext | null = null
+let _soundEnabled = true
+
+export function setSoundEnabled(v: boolean) { _soundEnabled = v }
 
 function getCtx(): AudioContext | null {
+  if (!_soundEnabled) return null
   if (typeof window === 'undefined') return null
   if (!audioCtx) audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)()
   if (audioCtx.state === 'suspended') audioCtx.resume()
@@ -23,6 +27,7 @@ function tone(freq: number, startTime: number, duration: number, vol = 0.4) {
 }
 
 export function initAudio() {
+  if (!_soundEnabled) return
   getCtx()
 }
 

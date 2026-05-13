@@ -48,10 +48,12 @@ export function buildSegments(workout: Workout): Segment[] {
       for (let set = 1; set <= rounds; set++) {
         const isLastSet = set === rounds
         for (let exIdx = 0; exIdx < exCount; exIdx++) {
+          const ex = group.exercises[exIdx]
           const isLastEx = exIdx === exCount - 1
-          segments.push({ phase: 'work', duration: workout.workTime, label: group.exercises[exIdx].name, round: set, exerciseIndex: exIdx, groupIndex: gIdx })
+          segments.push({ phase: 'work', duration: workout.workTime, label: ex.name, round: set, exerciseIndex: exIdx, groupIndex: gIdx })
           if (!isLastEx) {
-            segments.push({ phase: 'rest', duration: workout.restTime, label: 'Rest', round: set, exerciseIndex: exIdx, groupIndex: gIdx })
+            const restDur = ex.restTime ?? workout.restTime
+            segments.push({ phase: 'rest', duration: restDur, label: 'Rest', round: set, exerciseIndex: exIdx, groupIndex: gIdx })
           }
         }
         if (!isLastSet && cycleBreak > 0) {
