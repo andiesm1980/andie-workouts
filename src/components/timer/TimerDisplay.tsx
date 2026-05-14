@@ -102,8 +102,8 @@ export function TimerDisplay({ workout }: Props) {
     timer.phase !== 'warmup' && timer.phase !== 'cooldown'
 
   return (
-    <div className="flex flex-col h-[100dvh] select-none items-center" style={{ backgroundColor: '#0c0c0f' }}>
-    <div className="flex flex-col h-full w-full" style={{ maxWidth: 480 }}>
+    <div className="flex flex-col h-[100dvh] select-none" style={{ backgroundColor: '#0c0c0f' }}>
+    <div className="flex flex-col h-full w-full mx-auto" style={{ maxWidth: 480 }}>
 
       {/* Top bar */}
       <div
