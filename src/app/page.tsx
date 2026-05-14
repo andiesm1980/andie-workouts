@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWorkoutStore } from '@/store/workoutStore'
 import { WorkoutCard } from '@/components/workout/WorkoutCard'
+import { WorkoutDetail } from '@/components/workout/WorkoutDetail'
 import { generateId } from '@/lib/workoutUtils'
 import type { Workout, WorkoutType } from '@/types/workout'
 
@@ -45,6 +46,19 @@ export default function HomePage() {
   const [showPicker, setShowPicker] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [query, setQuery] = useState('')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [isDesktop, setIsDesktop] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)')
+    setIsDesktop(mq.matches)
+    const handler = (e: MediaQueryListEvent) => {
+      setIsDesktop(e.matches)
+      if (!e.matches) setSelectedId(null)
+    }
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
 
   const filtered = useMemo(() => {
     if (!query.trim()) return workouts
@@ -52,17 +66,34 @@ export default function HomePage() {
     return workouts.filter((w) => w.name.toLowerCase().includes(q))
   }, [workouts, query])
 
+  const selectedWorkout = workouts.find((w) => w.id === selectedId) ?? null
+
+  const handleSelect = (id: string) => {
+    if (isDesktop) {
+      setSelectedId(id)
+    } else {
+      router.push(`/workout/${id}`)
+    }
+  }
+
   const handleCreate = (type: WorkoutType) => {
     const w = newWorkout(type)
     addWorkout(w)
     setShowPicker(false)
-    router.push(`/workout/${w.id}`)
+    if (isDesktop) {
+      setSelectedId(w.id)
+    } else {
+      router.push(`/workout/${w.id}`)
+    }
   }
 
-  return (
-    <div className="min-h-[100dvh] flex flex-col" style={{ backgroundColor: '#0c0c0f' }}>
+  const sidebar = (
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="px-6" style={{ paddingTop: 'max(env(safe-area-inset-top), 32px)', paddingBottom: 16 }}>
+      <div
+        className="shrink-0 px-6"
+        style={{ paddingTop: 'max(env(safe-area-inset-top), 32px)', paddingBottom: 16 }}
+      >
         <div className="flex items-end justify-between mb-5">
           <div>
             <p className="text-white/25 text-xs font-semibold tracking-widest uppercase mb-1">
@@ -82,7 +113,6 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* Search */}
         {workouts.length > 0 && (
           <div className="relative">
             <svg
@@ -106,12 +136,12 @@ export default function HomePage() {
             />
           </div>
         )}
-      </header>
+      </div>
 
-      <div className="h-px mx-6" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
+      <div className="h-px mx-6 shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
 
-      {/* List */}
-      <main className="flex-1 px-6 pb-12">
+      {/* Scrollable list */}
+      <div className="flex-1 overflow-y-auto px-6 pb-12">
         {workouts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-32 text-center">
             <p className="text-white/20 text-sm mb-6">No workouts yet</p>
@@ -125,11 +155,14 @@ export default function HomePage() {
         ) : filtered.length === 0 ? (
           <p className="text-white/20 text-sm py-10 text-center">No workouts match "{query}"</p>
         ) : (
-          <div>
-            {filtered.map((workout) => (
-              <WorkoutCard key={workout.id} workout={workout} />
-            ))}
-          </div>
+          filtered.map((workout) => (
+            <WorkoutCard
+              key={workout.id}
+              workout={workout}
+              onSelect={handleSelect}
+              selected={selectedId === workout.id}
+            />
+          ))
         )}
 
         {/* Session history */}
@@ -142,7 +175,6 @@ export default function HomePage() {
               <span className="text-white/25 text-xs font-semibold tracking-widest uppercase">History</span>
               <span className="text-white/20 text-xs">{showHistory ? '▲' : '▼'}</span>
             </button>
-
             {showHistory && (
               <div>
                 {sessions.slice(0, 20).map((s) => (
@@ -168,9 +200,51 @@ export default function HomePage() {
             )}
           </div>
         )}
-      </main>
+      </div>
+    </div>
+  )
 
-      {/* Type picker bottom sheet */}
+  return (
+    <div className="flex h-[100dvh] overflow-hidden" style={{ backgroundColor: '#0c0c0f' }}>
+
+      {/* Sidebar — full width on mobile, fixed on desktop */}
+      <div
+        className="flex flex-col h-full md:shrink-0"
+        style={{ width: isDesktop ? 300 : '100%', borderRight: isDesktop ? '1px solid rgba(255,255,255,0.06)' : 'none' }}
+      >
+        {sidebar}
+      </div>
+
+      {/* Main panel — desktop only */}
+      {isDesktop && (
+        <div className="flex-1 h-full overflow-y-auto">
+          {selectedWorkout ? (
+            <WorkoutDetail
+              key={selectedWorkout.id}
+              workout={selectedWorkout}
+              onClose={() => setSelectedId(null)}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full gap-4">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-2" style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+                  <polyline points="13 2 13 9 20 9" />
+                </svg>
+              </div>
+              <p className="text-white/25 text-sm">Select a workout to edit</p>
+              <button
+                onClick={() => setShowPicker(true)}
+                className="mt-2 px-5 py-2.5 rounded-xl text-sm font-semibold border border-white/10 text-white/40 hover:text-white/60 hover:border-white/20 transition-all"
+              >
+                + New workout
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Type picker sheet */}
       {showPicker && (
         <div
           className="fixed inset-0 z-50 flex items-end"
@@ -178,13 +252,13 @@ export default function HomePage() {
           onClick={() => setShowPicker(false)}
         >
           <div
-            className="w-full rounded-t-3xl px-6 pt-6 pb-safe"
+            className="w-full rounded-t-3xl px-6 pt-6"
             style={{ backgroundColor: '#13131a', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-10 h-1 rounded-full mx-auto mb-6" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />
             <p className="text-white/40 text-xs font-semibold tracking-widest uppercase mb-4">Workout type</p>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 max-w-lg mx-auto">
               <button
                 onClick={() => handleCreate('hiit')}
                 className="flex items-center gap-4 p-4 rounded-2xl text-left transition-all active:scale-98"

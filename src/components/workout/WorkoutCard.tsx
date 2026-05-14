@@ -1,6 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import type { Workout } from '@/types/workout'
 import { computeTotalTime, formatDuration } from '@/lib/workoutUtils'
 
@@ -11,10 +10,11 @@ const TYPE_COLOR: Record<string, string> = {
 
 interface Props {
   workout: Workout
+  onSelect: (id: string) => void
+  selected?: boolean
 }
 
-export function WorkoutCard({ workout }: Props) {
-  const router = useRouter()
+export function WorkoutCard({ workout, onSelect, selected }: Props) {
   const accent = TYPE_COLOR[workout.type]
   const total = computeTotalTime(workout)
   const exCount = workout.type === 'circuit'
@@ -23,17 +23,18 @@ export function WorkoutCard({ workout }: Props) {
 
   return (
     <div
-      onClick={() => router.push(`/workout/${workout.id}`)}
+      onClick={() => onSelect(workout.id)}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && router.push(`/workout/${workout.id}`)}
-      className="flex items-center gap-3 py-4 cursor-pointer transition-colors active:bg-white/3"
-      style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+      onKeyDown={(e) => e.key === 'Enter' && onSelect(workout.id)}
+      className="flex items-center gap-3 py-4 cursor-pointer transition-colors rounded-lg px-2 -mx-2"
+      style={{
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        backgroundColor: selected ? 'rgba(255,255,255,0.05)' : 'transparent',
+      }}
     >
-      {/* Accent dot */}
       <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: accent }} />
 
-      {/* Name + subtitle */}
       <div className="flex-1 min-w-0">
         <p className="text-white font-medium text-base truncate leading-snug">{workout.name}</p>
         {exCount !== null && exCount > 0 && (
@@ -43,20 +44,17 @@ export function WorkoutCard({ workout }: Props) {
         )}
       </div>
 
-      {/* Type badge */}
       <span
-        className="text-xs font-semibold px-2 py-0.5 rounded-md shrink-0 tabular-nums"
+        className="text-xs font-semibold px-2 py-0.5 rounded-md shrink-0"
         style={{ backgroundColor: accent + '18', color: accent }}
       >
         {workout.type === 'hiit' ? 'HIIT' : 'Circuit'}
       </span>
 
-      {/* Duration */}
       <span className="text-white/30 text-sm tabular-nums shrink-0 min-w-[44px] text-right">
         {formatDuration(total)}
       </span>
 
-      {/* Chevron */}
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
         <path d="M9 18l6-6-6-6" />
       </svg>

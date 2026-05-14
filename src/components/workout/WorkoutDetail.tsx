@@ -13,9 +13,10 @@ type Tab = 'timer' | 'exercises'
 
 interface Props {
   workout: Workout
+  onClose?: () => void  // when provided: embedded in desktop panel
 }
 
-export function WorkoutDetail({ workout: initial }: Props) {
+export function WorkoutDetail({ workout: initial, onClose }: Props) {
   const router = useRouter()
   const { updateWorkout, deleteWorkout } = useWorkoutStore()
   const [workout, setWorkout] = useState<Workout>(initial)
@@ -24,6 +25,8 @@ export function WorkoutDetail({ workout: initial }: Props) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
+
+  const goBack = () => onClose ? onClose() : router.push('/')
 
   const update = useCallback(
     (updates: Partial<Workout>) => {
@@ -40,7 +43,7 @@ export function WorkoutDetail({ workout: initial }: Props) {
 
   const confirmDelete = () => {
     deleteWorkout(workout.id)
-    router.push('/')
+    goBack()
   }
 
   const handleShare = async () => {
@@ -57,22 +60,28 @@ export function WorkoutDetail({ workout: initial }: Props) {
   const tabs: Tab[] = workout.type === 'circuit' ? ['timer', 'exercises'] : ['timer']
 
   return (
-    <div className="flex flex-col h-[100dvh]" style={{ backgroundColor: '#0c0c0f' }}>
+    <div className="flex flex-col h-full" style={{ backgroundColor: '#0c0c0f', minHeight: onClose ? undefined : '100dvh' }}>
       {/* Header */}
       <div
-        className="shrink-0 px-5 pt-safe"
-        style={{ paddingTop: 'max(env(safe-area-inset-top), 20px)' }}
+        className="shrink-0 px-5"
+        style={{ paddingTop: onClose ? 20 : 'max(env(safe-area-inset-top), 20px)' }}
       >
         <div className="flex items-center gap-3 mb-5">
-          {/* Back */}
+          {/* Back / Close */}
           <button
-            onClick={() => router.push('/')}
+            onClick={goBack}
             className="text-white/40 hover:text-white/70 transition-colors p-1 -ml-1"
-            aria-label="Back"
+            aria-label={onClose ? 'Close' : 'Back'}
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
+            {onClose ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            ) : (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            )}
           </button>
 
           {/* Workout name */}
@@ -121,15 +130,17 @@ export function WorkoutDetail({ workout: initial }: Props) {
                 </svg>
               )}
             </button>
-            <button
-              onClick={() => router.push('/')}
-              className="p-2 text-white/40 hover:text-white/70 transition-colors"
-              aria-label="Save and go back"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </button>
+            {!onClose && (
+              <button
+                onClick={goBack}
+                className="p-2 text-white/40 hover:text-white/70 transition-colors"
+                aria-label="Save and go back"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </button>
+            )}
             <button
               onClick={handleDelete}
               className="p-2 text-white/25 hover:text-red-400/60 transition-colors"
@@ -198,7 +209,7 @@ export function WorkoutDetail({ workout: initial }: Props) {
       </div>
 
       {/* Start button */}
-      <div className="shrink-0 px-5 pt-3 pb-safe" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 24px)' }}>
+      <div className="shrink-0 px-5 pt-3" style={{ paddingBottom: onClose ? 24 : 'max(env(safe-area-inset-bottom), 24px)' }}>
         <button
           onClick={() => router.push(`/timer/${workout.id}`)}
           className="w-full py-4 rounded-2xl font-semibold text-base transition-all active:scale-98"
