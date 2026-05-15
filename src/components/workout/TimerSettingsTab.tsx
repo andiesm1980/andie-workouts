@@ -153,6 +153,37 @@ export function TimerSettingsTab({ workout, onChange }: Props) {
             min={0} max={600} step={5} format="time" />
         </Row>
       )}
+
+      {/* Auto-start */}
+      <Row label={
+        <span>
+          Auto-start
+          <span className="block text-xs font-normal mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
+            Begin immediately when opened
+          </span>
+        </span>
+      }>
+        <button
+          onClick={() => onChange({ autoStart: !workout.autoStart })}
+          className="relative shrink-0 transition-colors"
+          style={{ width: 44, height: 26 }}
+          role="switch"
+          aria-checked={!!workout.autoStart}
+        >
+          <div
+            className="absolute inset-0 rounded-full transition-colors duration-200"
+            style={{ backgroundColor: workout.autoStart ? '#f0407a' : 'rgba(255,255,255,0.12)' }}
+          />
+          <div
+            className="absolute top-[3px] rounded-full transition-transform duration-200"
+            style={{
+              width: 20, height: 20,
+              backgroundColor: '#fff',
+              left: workout.autoStart ? 21 : 3,
+            }}
+          />
+        </button>
+      </Row>
     </div>
   )
 }

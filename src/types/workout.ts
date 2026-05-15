@@ -4,6 +4,7 @@ export type Phase = 'idle' | 'warmup' | 'work' | 'rest' | 'break' | 'cooldown' |
 export interface Exercise {
   id: string
   name: string
+  workTime?: number // overrides workout.workTime when set
   restTime?: number // overrides workout.restTime when set
 }
 
@@ -32,5 +33,6 @@ export interface Workout {
   warmup: number      // get ready countdown (seconds)
   cooldown: number    // cool down (seconds)
   exerciseGroups: ExerciseGroup[]
+  autoStart?: boolean
   createdAt: number
 }

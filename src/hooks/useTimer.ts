@@ -50,8 +50,10 @@ export function buildSegments(workout: Workout): Segment[] {
         for (let exIdx = 0; exIdx < exCount; exIdx++) {
           const ex = group.exercises[exIdx]
           const isLastEx = exIdx === exCount - 1
-          segments.push({ phase: 'work', duration: workout.workTime, label: ex.name, round: set, exerciseIndex: exIdx, groupIndex: gIdx })
-          if (!isLastEx) {
+          const workDur = ex.workTime ?? workout.workTime
+          segments.push({ phase: 'work', duration: workDur, label: ex.name, round: set, exerciseIndex: exIdx, groupIndex: gIdx })
+          // rest between exercises, AND after the last exercise before the next set starts
+          if (!isLastEx || !isLastSet) {
             const restDur = ex.restTime ?? workout.restTime
             segments.push({ phase: 'rest', duration: restDur, label: 'Rest', round: set, exerciseIndex: exIdx, groupIndex: gIdx })
           }

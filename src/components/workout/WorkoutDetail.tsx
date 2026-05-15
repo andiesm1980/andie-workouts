@@ -6,19 +6,20 @@ import type { Workout } from '@/types/workout'
 import { useWorkoutStore } from '@/store/workoutStore'
 import { TimerSettingsTab } from './TimerSettingsTab'
 import { ExercisesTab } from './ExercisesTab'
-import { computeTotalTime, formatDuration } from '@/lib/workoutUtils'
+import { computeTotalTime, formatDuration, generateId } from '@/lib/workoutUtils'
 import { shareUrl } from '@/lib/shareWorkout'
 
 type Tab = 'timer' | 'exercises'
 
 interface Props {
   workout: Workout
-  onClose?: () => void  // when provided: embedded in desktop panel
+  onClose?: () => void
+  onDuplicate?: (newId: string) => void
 }
 
-export function WorkoutDetail({ workout: initial, onClose }: Props) {
+export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props) {
   const router = useRouter()
-  const { updateWorkout, deleteWorkout } = useWorkoutStore()
+  const { updateWorkout, deleteWorkout, addWorkout } = useWorkoutStore()
   const [workout, setWorkout] = useState<Workout>(initial)
   const [activeTab, setActiveTab] = useState<Tab>('timer')
   const [editingName, setEditingName] = useState(false)
@@ -44,6 +45,13 @@ export function WorkoutDetail({ workout: initial, onClose }: Props) {
   const confirmDelete = () => {
     deleteWorkout(workout.id)
     goBack()
+  }
+
+  const handleDuplicate = () => {
+    const copy = { ...workout, id: generateId(), name: `${workout.name} (copy)`, createdAt: Date.now() }
+    addWorkout(copy)
+    if (onDuplicate) onDuplicate(copy.id)
+    else router.push(`/workout/${copy.id}`)
   }
 
   const handleShare = async () => {
@@ -113,6 +121,16 @@ export function WorkoutDetail({ workout: initial, onClose }: Props) {
 
           {/* Actions */}
           <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={handleDuplicate}
+              className="p-2 text-white/35 hover:text-white/60 transition-colors"
+              aria-label="Duplicate workout"
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
+            </button>
             <button
               onClick={handleShare}
               className="p-2 transition-colors"

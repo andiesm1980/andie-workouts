@@ -204,6 +204,7 @@ export default function HomePage() {
             key={selectedWorkout.id}
             workout={selectedWorkout}
             onClose={() => setSelectedId(null)}
+            onDuplicate={(newId) => setSelectedId(newId)}
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-full gap-4">

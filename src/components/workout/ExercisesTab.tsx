@@ -23,9 +23,9 @@ function DragDots() {
 
 export function ExercisesTab({ workout, onChange }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editingRestId, setEditingRestId] = useState<string | null>(null)
+  const [editingExtra, setEditingExtra] = useState<{ id: string; field: 'work' | 'rest' } | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const restInputRef = useRef<HTMLInputElement>(null)
+  const extraInputRef = useRef<HTMLInputElement>(null)
   const groups = workout.exerciseGroups ?? []
 
   const updateGroups = (next: ExerciseGroup[]) => onChange({ exerciseGroups: next })
@@ -113,10 +113,19 @@ export function ExercisesTab({ workout, onChange }: Props) {
 
           {group.exercises.map((ex, exIdx) => {
             const isLastEx = exIdx === group.exercises.length - 1
+            const hasCustomWork = ex.workTime !== undefined
             const hasCustomRest = ex.restTime !== undefined
+            const isEditingWork = editingExtra?.id === ex.id && editingExtra.field === 'work'
+            const isEditingRest = editingExtra?.id === ex.id && editingExtra.field === 'rest'
+
+            const openExtra = (field: 'work' | 'rest') => {
+              setEditingExtra({ id: ex.id, field })
+              setTimeout(() => extraInputRef.current?.focus(), 50)
+            }
+
             return (
               <div key={ex.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <div className="flex items-center gap-4 py-3.5">
+                <div className="flex items-center gap-3 py-3.5">
                   <DragDots />
 
                   {editingId === ex.id ? (
@@ -134,17 +143,29 @@ export function ExercisesTab({ workout, onChange }: Props) {
                     />
                   ) : (
                     <button
-                      className="flex-1 text-left text-white text-base hover:text-white/80 transition-colors"
+                      className="flex-1 text-left text-white text-base hover:text-white/80 transition-colors min-w-0 truncate"
                       onClick={() => setEditingId(ex.id)}
                     >
-                      {ex.name || <span className="text-white/30 italic">Unnamed exercise</span>}
+                      {ex.name || <span className="text-white/30 italic">Unnamed</span>}
                     </button>
                   )}
 
-                  {/* Per-exercise rest time (only between exercises, not after last) */}
+                  {/* Work time badge */}
+                  <button
+                    onClick={() => openExtra('work')}
+                    className="shrink-0 px-2 py-1 rounded-lg text-xs tabular-nums transition-colors"
+                    style={{
+                      backgroundColor: hasCustomWork ? 'rgba(240,64,122,0.12)' : 'rgba(255,255,255,0.05)',
+                      color: hasCustomWork ? '#f0407a' : 'rgba(255,255,255,0.25)',
+                    }}
+                  >
+                    {hasCustomWork ? `${ex.workTime}s` : `${workout.workTime}s`}
+                  </button>
+
+                  {/* Rest time badge (only between exercises) */}
                   {!isLastEx && (
                     <button
-                      onClick={() => { setEditingRestId(ex.id); setTimeout(() => restInputRef.current?.focus(), 50) }}
+                      onClick={() => openExtra('rest')}
                       className="shrink-0 px-2 py-1 rounded-lg text-xs tabular-nums transition-colors"
                       style={{
                         backgroundColor: hasCustomRest ? 'rgba(0,217,160,0.12)' : 'rgba(255,255,255,0.05)',
@@ -166,33 +187,39 @@ export function ExercisesTab({ workout, onChange }: Props) {
                   </button>
                 </div>
 
-                {/* Inline rest time editor */}
-                {!isLastEx && editingRestId === ex.id && (
+                {/* Inline editor for work or rest */}
+                {(isEditingWork || isEditingRest) && (
                   <div className="flex items-center gap-3 pb-3 pl-10">
-                    <span className="text-white/30 text-xs">Rest after this exercise:</span>
+                    <span className="text-white/30 text-xs">
+                      {isEditingWork ? 'Work time:' : 'Rest after:'}
+                    </span>
                     <input
-                      ref={restInputRef}
+                      ref={extraInputRef}
                       type="number"
-                      min={0}
-                      max={300}
-                      defaultValue={ex.restTime ?? workout.restTime}
+                      min={isEditingWork ? 5 : 0}
+                      max={isEditingWork ? 3600 : 300}
+                      step={5}
+                      defaultValue={isEditingWork ? (ex.workTime ?? workout.workTime) : (ex.restTime ?? workout.restTime)}
                       className="w-16 bg-transparent text-white text-sm text-center focus:outline-none border-b border-white/30"
                       onBlur={(e) => {
                         const val = parseInt(e.target.value)
                         if (!isNaN(val) && val >= 0) {
-                          updateExercise(group.id, ex.id, { restTime: val })
+                          updateExercise(group.id, ex.id, isEditingWork ? { workTime: val } : { restTime: val })
                         }
-                        setEditingRestId(null)
+                        setEditingExtra(null)
                       }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') e.currentTarget.blur()
-                        if (e.key === 'Escape') setEditingRestId(null)
+                        if (e.key === 'Escape') setEditingExtra(null)
                       }}
                     />
                     <span className="text-white/30 text-xs">sec</span>
-                    {hasCustomRest && (
+                    {(isEditingWork ? hasCustomWork : hasCustomRest) && (
                       <button
-                        onClick={() => { updateExercise(group.id, ex.id, { restTime: undefined }); setEditingRestId(null) }}
+                        onClick={() => {
+                          updateExercise(group.id, ex.id, isEditingWork ? { workTime: undefined } : { restTime: undefined })
+                          setEditingExtra(null)
+                        }}
                         className="text-white/25 text-xs hover:text-white/50 transition-colors"
                       >
                         reset
