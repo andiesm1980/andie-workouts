@@ -19,7 +19,8 @@ export interface CompletedSession {
 export interface ExerciseGroup {
   id: string
   exercises: Exercise[]
-  restAfter?: number // rest between this superset and the next (overrides cycleBreak)
+  setBreak?: number  // rest between sets of this superset (overrides cycleBreak)
+  restAfter?: number // rest after all sets before next superset (overrides cycleBreak)
 }
 
 export interface Workout {
@@ -35,5 +36,6 @@ export interface Workout {
   cooldown: number    // cool down (seconds)
   exerciseGroups: ExerciseGroup[]
   autoStart?: boolean
+  pinned?: boolean
   createdAt: number
 }

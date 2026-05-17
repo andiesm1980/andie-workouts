@@ -14,7 +14,8 @@ export function computeTotalTime(workout: Workout): number {
     groups.forEach((group, gIdx) => {
       const exCount = Math.max(1, (group.exercises ?? []).length)
       const perSet = exCount * workout.workTime + (exCount - 1) * workout.restTime
-      total += rounds * perSet + (rounds - 1) * cycleBreak
+      const setBreakDur = group.setBreak !== undefined ? group.setBreak : cycleBreak
+      total += rounds * perSet + (rounds - 1) * setBreakDur
       if (gIdx < groups.length - 1) {
         total += group.restAfter !== undefined ? group.restAfter : cycleBreak
       }

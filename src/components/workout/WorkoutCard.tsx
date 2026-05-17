@@ -36,7 +36,14 @@ export function WorkoutCard({ workout, onSelect, selected }: Props) {
       <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: accent }} />
 
       <div className="flex-1 min-w-0">
-        <p className="text-white font-medium text-base truncate leading-snug">{workout.name}</p>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className="text-white font-medium text-base truncate leading-snug">{workout.name}</p>
+          {workout.pinned && (
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="#ffcb38" stroke="none" className="shrink-0 mb-0.5">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+            </svg>
+          )}
+        </div>
         {exCount !== null && exCount > 0 && (
           <p className="text-white/25 text-xs mt-0.5 truncate">
             {exCount} exercise{exCount !== 1 ? 's' : ''}

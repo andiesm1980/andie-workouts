@@ -19,7 +19,7 @@ interface Props {
 
 export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props) {
   const router = useRouter()
-  const { updateWorkout, deleteWorkout, addWorkout } = useWorkoutStore()
+  const { updateWorkout, deleteWorkout, addWorkout, togglePin } = useWorkoutStore()
   const [workout, setWorkout] = useState<Workout>(initial)
   const [activeTab, setActiveTab] = useState<Tab>('timer')
   const [editingName, setEditingName] = useState(false)
@@ -121,6 +121,16 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
 
           {/* Actions */}
           <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => togglePin(workout.id)}
+              className="p-2 transition-colors"
+              style={{ color: workout.pinned ? '#ffcb38' : 'rgba(255,255,255,0.35)' }}
+              aria-label={workout.pinned ? 'Unpin workout' : 'Pin workout'}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill={workout.pinned ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+              </svg>
+            </button>
             <button
               onClick={handleDuplicate}
               className="p-2 text-white/35 hover:text-white/60 transition-colors"

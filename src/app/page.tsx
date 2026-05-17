@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWorkoutStore } from '@/store/workoutStore'
 import { WorkoutCard } from '@/components/workout/WorkoutCard'
 import { WorkoutDetail } from '@/components/workout/WorkoutDetail'
 import { generateId } from '@/lib/workoutUtils'
+import { exportWorkouts, parseImportFile } from '@/lib/exportImport'
 import type { Workout, WorkoutType } from '@/types/workout'
 
 function relativeDate(ts: number): string {
@@ -47,12 +48,41 @@ export default function HomePage() {
   const [showHistory, setShowHistory] = useState(false)
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [importMsg, setImportMsg] = useState<string | null>(null)
+  const importInputRef = useRef<HTMLInputElement>(null)
+
+  const sorted = useMemo(() => {
+    const pinned = workouts.filter((w) => w.pinned)
+    const rest = workouts.filter((w) => !w.pinned)
+    return [...pinned, ...rest]
+  }, [workouts])
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return workouts
+    if (!query.trim()) return sorted
     const q = query.toLowerCase()
-    return workouts.filter((w) => w.name.toLowerCase().includes(q))
-  }, [workouts, query])
+    return sorted.filter((w) => w.name.toLowerCase().includes(q))
+  }, [sorted, query])
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      const imported = await parseImportFile(file)
+      const existingIds = new Set(workouts.map((w) => w.id))
+      let count = 0
+      imported.forEach((w) => {
+        const workout = existingIds.has(w.id) ? { ...w, id: generateId() } : w
+        addWorkout(workout)
+        count++
+      })
+      setImportMsg(`${count} workout${count !== 1 ? 's' : ''} imported`)
+      setTimeout(() => setImportMsg(null), 3000)
+    } catch {
+      setImportMsg('Invalid file')
+      setTimeout(() => setImportMsg(null), 3000)
+    }
+    e.target.value = ''
+  }
 
   const selectedWorkout = workouts.find((w) => w.id === selectedId) ?? null
 
@@ -76,6 +106,14 @@ export default function HomePage() {
         className="shrink-0 px-6"
         style={{ paddingTop: 'max(env(safe-area-inset-top), 32px)', paddingBottom: 16 }}
       >
+        <input
+          ref={importInputRef}
+          type="file"
+          accept=".json"
+          className="hidden"
+          onChange={handleImport}
+        />
+
         <div className="flex items-end justify-between mb-5">
           <div>
             <p className="text-white/25 text-xs font-semibold tracking-widest uppercase mb-1">
@@ -83,17 +121,49 @@ export default function HomePage() {
             </p>
             <h1 className="text-white text-3xl font-semibold tracking-tight">Workouts</h1>
           </div>
-          <button
-            onClick={() => setShowPicker(true)}
-            className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2.5 rounded-xl transition-all active:scale-95 border border-white/10 hover:border-white/20 text-white/60 hover:text-white/80"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            New
-          </button>
+          <div className="flex items-center gap-1">
+            {/* Export */}
+            <button
+              onClick={() => exportWorkouts(workouts)}
+              className="w-9 h-9 flex items-center justify-center rounded-xl transition-all active:scale-95 text-white/35 hover:text-white/60"
+              aria-label="Export workouts"
+              title="Export workouts"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </button>
+            {/* Import */}
+            <button
+              onClick={() => importInputRef.current?.click()}
+              className="w-9 h-9 flex items-center justify-center rounded-xl transition-all active:scale-95 text-white/35 hover:text-white/60"
+              aria-label="Import workouts"
+              title="Import workouts"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 5 17 10" />
+                <line x1="12" y1="5" x2="12" y2="17" />
+              </svg>
+            </button>
+            {/* New */}
+            <button
+              onClick={() => setShowPicker(true)}
+              className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2.5 rounded-xl transition-all active:scale-95 border border-white/10 hover:border-white/20 text-white/60 hover:text-white/80"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              New
+            </button>
+          </div>
         </div>
+        {importMsg && (
+          <p className="text-white/50 text-xs mb-3 text-center">{importMsg}</p>
+        )}
 
         {workouts.length > 0 && (
           <div className="relative">

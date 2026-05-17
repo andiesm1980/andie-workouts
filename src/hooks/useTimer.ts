@@ -58,8 +58,9 @@ export function buildSegments(workout: Workout): Segment[] {
             segments.push({ phase: 'rest', duration: restDur, label: 'Rest', round: set, exerciseIndex: exIdx, groupIndex: gIdx })
           }
         }
-        if (!isLastSet && cycleBreak > 0) {
-          segments.push({ phase: 'break', duration: cycleBreak, label: 'Break', round: set, exerciseIndex: 0, groupIndex: gIdx })
+        const setBreakDur = group.setBreak !== undefined ? group.setBreak : cycleBreak
+        if (!isLastSet && setBreakDur > 0) {
+          segments.push({ phase: 'break', duration: setBreakDur, label: 'Break', round: set, exerciseIndex: 0, groupIndex: gIdx })
         }
       }
 

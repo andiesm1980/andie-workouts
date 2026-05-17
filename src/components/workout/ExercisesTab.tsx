@@ -9,60 +9,144 @@ interface Props {
   onChange: (updates: Partial<Workout>) => void
 }
 
-function DragDots() {
+function DragDots({ small }: { small?: boolean }) {
+  const r = small ? 1.2 : 1.5
+  const gap = small ? 5 : 6
   return (
-    <svg width="16" height="20" viewBox="0 0 16 20" fill="none" className="shrink-0">
-      {[0, 6, 12].map((x) =>
-        [0, 6, 12].map((y) => (
-          <circle key={`${x}-${y}`} cx={x + 2} cy={y + 4} r={1.5} fill="rgba(255,255,255,0.2)" />
+    <svg width={small ? 12 : 16} height={small ? 16 : 20} viewBox={`0 0 16 20`} fill="none" className="shrink-0">
+      {[0, gap, gap * 2].map((x) =>
+        [0, gap, gap * 2].map((y) => (
+          <circle key={`${x}-${y}`} cx={x + 2} cy={y + 4} r={r} fill="rgba(255,255,255,0.2)" />
         ))
       )}
     </svg>
   )
 }
 
-interface DragState {
-  groupId: string
-  exId: string
-  fromIdx: number
+interface ExDragState { groupId: string; exId: string; fromIdx: number }
+interface GroupDragState { fromIdx: number }
+
+function useDrag<T extends { fromIdx: number }>(
+  onDrop: (drag: T, dropIdx: number) => void,
+  getDropIdx: (y: number, drag: T) => number
+) {
+  const [active, setActive] = useState<T | null>(null)
+  const [dropTarget, setDropTarget] = useState<number | null>(null)
+  const activeRef = useRef(active)
+  const dropRef = useRef(dropTarget)
+  activeRef.current = active
+  dropRef.current = dropTarget
+
+  useEffect(() => {
+    if (!active) return
+    const move = (e: PointerEvent) => {
+      e.preventDefault()
+      const drag = activeRef.current
+      if (!drag) return
+      setDropTarget(getDropIdx(e.clientY, drag))
+    }
+    const up = () => {
+      const drag = activeRef.current
+      const drop = dropRef.current
+      if (drag && drop !== null && drop !== drag.fromIdx && drop !== drag.fromIdx + 1) {
+        onDrop(drag, drop)
+      }
+      setActive(null)
+      setDropTarget(null)
+    }
+    window.addEventListener('pointermove', move, { passive: false })
+    window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', up)
+    return () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', up)
+    }
+  }, [active]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const start = (e: React.PointerEvent, state: T) => {
+    e.preventDefault()
+    setActive(state)
+    setDropTarget(state.fromIdx)
+  }
+
+  return { active, dropTarget, start }
 }
 
 export function ExercisesTab({ workout, onChange }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingExtra, setEditingExtra] = useState<{ id: string; field: 'work' | 'rest' } | null>(null)
-  const [editingGroupRest, setEditingGroupRest] = useState<string | null>(null)
-  const [activeDrag, setActiveDrag] = useState<DragState | null>(null)
-  const [dropTarget, setDropTarget] = useState<number | null>(null)
+  const [editingGroupField, setEditingGroupField] = useState<{ id: string; field: 'setBreak' | 'restAfter' } | null>(null)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const extraInputRef = useRef<HTMLInputElement>(null)
-  const groupRestInputRef = useRef<HTMLInputElement>(null)
+  const groupFieldInputRef = useRef<HTMLInputElement>(null)
   const rowEls = useRef<Map<string, HTMLElement>>(new Map())
-  const activeDragRef = useRef(activeDrag)
-  const dropTargetRef = useRef(dropTarget)
-  activeDragRef.current = activeDrag
-  dropTargetRef.current = dropTarget
+  const groupEls = useRef<Map<string, HTMLElement>>(new Map())
 
   const groups = workout.exerciseGroups ?? []
 
-  const updateGroups = (next: ExerciseGroup[]) => onChange({ exerciseGroups: next })
-
-  const addGroup = () => {
-    const newGroup: ExerciseGroup = { id: generateId(), exercises: [] }
-    updateGroups([...groups, newGroup])
-  }
-
-  const deleteGroup = (groupId: string) => {
-    updateGroups(groups.filter((g) => g.id !== groupId))
-  }
+  const updateGroups = useCallback((next: ExerciseGroup[]) => onChange({ exerciseGroups: next }), [onChange])
 
   const updateGroup = useCallback((groupId: string, exercises: Exercise[]) => {
     onChange({ exerciseGroups: (workout.exerciseGroups ?? []).map((g) => (g.id === groupId ? { ...g, exercises } : g)) })
   }, [workout.exerciseGroups, onChange])
 
-  const updateGroupRest = (groupId: string, restAfter: number | undefined) => {
-    updateGroups(groups.map((g) => (g.id === groupId ? { ...g, restAfter } : g)))
+  const updateGroupMeta = (groupId: string, updates: Partial<ExerciseGroup>) => {
+    updateGroups((workout.exerciseGroups ?? []).map((g) => (g.id === groupId ? { ...g, ...updates } : g)))
   }
+
+  // Exercise drag-to-reorder
+  const exDrag = useDrag<ExDragState>(
+    (drag, drop) => {
+      const group = (workout.exerciseGroups ?? []).find((g) => g.id === drag.groupId)
+      if (!group) return
+      const newExs = [...(group.exercises ?? [])]
+      const [moved] = newExs.splice(drag.fromIdx, 1)
+      newExs.splice(drop > drag.fromIdx ? drop - 1 : drop, 0, moved)
+      updateGroup(drag.groupId, newExs)
+    },
+    (y, drag) => {
+      const group = (workout.exerciseGroups ?? []).find((g) => g.id === drag.groupId)
+      if (!group) return drag.fromIdx
+      const exes = group.exercises ?? []
+      let target = exes.length
+      for (let i = 0; i < exes.length; i++) {
+        const el = rowEls.current.get(exes[i].id)
+        if (!el) continue
+        const rect = el.getBoundingClientRect()
+        if (y < rect.top + rect.height / 2) { target = i; break }
+      }
+      return target
+    }
+  )
+
+  // Superset drag-to-reorder
+  const groupDrag = useDrag<GroupDragState>(
+    (drag, drop) => {
+      const newGroups = [...(workout.exerciseGroups ?? [])]
+      const [moved] = newGroups.splice(drag.fromIdx, 1)
+      newGroups.splice(drop > drag.fromIdx ? drop - 1 : drop, 0, moved)
+      updateGroups(newGroups)
+    },
+    (y, drag) => {
+      const currentGroups = workout.exerciseGroups ?? []
+      let target = currentGroups.length
+      for (let i = 0; i < currentGroups.length; i++) {
+        const el = groupEls.current.get(currentGroups[i].id)
+        if (!el) continue
+        const rect = el.getBoundingClientRect()
+        if (y < rect.top + rect.height / 2) { target = i; break }
+      }
+      return target
+    }
+  )
+
+  const addGroup = () => {
+    updateGroups([...groups, { id: generateId(), exercises: [] }])
+  }
+
+  const deleteGroup = (groupId: string) => updateGroups(groups.filter((g) => g.id !== groupId))
 
   const addExercise = (groupId: string) => {
     const group = groups.find((g) => g.id === groupId)
@@ -88,84 +172,49 @@ export function ExercisesTab({ workout, onChange }: Props) {
   }
 
   const commitEdit = (groupId: string, exId: string, name: string) => {
-    if (!name.trim()) {
-      removeExercise(groupId, exId)
-    } else {
-      updateExercise(groupId, exId, { name: name.trim() })
-    }
+    if (!name.trim()) removeExercise(groupId, exId)
+    else updateExercise(groupId, exId, { name: name.trim() })
     setEditingId(null)
   }
 
-  // Drag-to-reorder via pointer events
-  const startDrag = (e: React.PointerEvent, groupId: string, exId: string, fromIdx: number) => {
-    e.preventDefault()
-    setActiveDrag({ groupId, exId, fromIdx })
-    setDropTarget(fromIdx)
-  }
-
-  useEffect(() => {
-    if (!activeDrag) return
-
-    const handleMove = (e: PointerEvent) => {
-      e.preventDefault()
-      const drag = activeDragRef.current
-      if (!drag) return
-      const currentGroups = workout.exerciseGroups ?? []
-      const group = currentGroups.find((g) => g.id === drag.groupId)
-      if (!group) return
-      const exes = group.exercises ?? []
-      const y = e.clientY
-      let target = exes.length
-      for (let i = 0; i < exes.length; i++) {
-        const el = rowEls.current.get(exes[i].id)
-        if (!el) continue
-        const rect = el.getBoundingClientRect()
-        if (y < rect.top + rect.height / 2) { target = i; break }
-      }
-      setDropTarget(target)
-    }
-
-    const handleUp = () => {
-      const drag = activeDragRef.current
-      const drop = dropTargetRef.current
-      if (drag && drop !== null && drop !== drag.fromIdx && drop !== drag.fromIdx + 1) {
-        const currentGroups = workout.exerciseGroups ?? []
-        const group = currentGroups.find((g) => g.id === drag.groupId)
-        if (group) {
-          const newExs = [...(group.exercises ?? [])]
-          const [moved] = newExs.splice(drag.fromIdx, 1)
-          newExs.splice(drop > drag.fromIdx ? drop - 1 : drop, 0, moved)
-          updateGroup(drag.groupId, newExs)
-        }
-      }
-      setActiveDrag(null)
-      setDropTarget(null)
-    }
-
-    window.addEventListener('pointermove', handleMove, { passive: false })
-    window.addEventListener('pointerup', handleUp)
-    window.addEventListener('pointercancel', handleUp)
-    return () => {
-      window.removeEventListener('pointermove', handleMove)
-      window.removeEventListener('pointerup', handleUp)
-      window.removeEventListener('pointercancel', handleUp)
-    }
-  }, [activeDrag]) // eslint-disable-line react-hooks/exhaustive-deps
+  const isDraggingAny = !!exDrag.active || !!groupDrag.active
 
   return (
-    <div className="px-5 pb-8" style={{ userSelect: activeDrag ? 'none' : undefined }}>
+    <div className="px-5 pb-8" style={{ userSelect: isDraggingAny ? 'none' : undefined }}>
       {groups.length === 0 && (
         <p className="text-white/25 text-sm py-8 text-center">No supersets yet. Add one below.</p>
       )}
 
       {groups.map((group, gIdx) => {
-        const isDraggingGroup = activeDrag?.groupId === group.id
+        const isDraggingThisGroup = groupDrag.active?.fromIdx === gIdx
+        const showGroupDropAbove = groupDrag.active !== null &&
+          groupDrag.dropTarget === gIdx &&
+          !(groupDrag.dropTarget === groupDrag.active.fromIdx || groupDrag.dropTarget === groupDrag.active.fromIdx + 1)
+        const isDraggingExInThisGroup = exDrag.active?.groupId === group.id
 
         return (
-          <div key={group.id} className="mb-2">
+          <div
+            key={group.id}
+            ref={(el) => { if (el) groupEls.current.set(group.id, el); else groupEls.current.delete(group.id) }}
+            className="mb-2"
+            style={{ opacity: isDraggingThisGroup ? 0.3 : 1, transition: isDraggingThisGroup ? 'none' : 'opacity 0.15s' }}
+          >
+            {/* Drop indicator above group */}
+            {showGroupDropAbove && (
+              <div style={{ height: 2, backgroundColor: '#4e8fff', borderRadius: 1, margin: '4px 0' }} />
+            )}
+
             {/* Superset header */}
-            <div className="flex items-center justify-between mb-1 pt-5">
-              <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: '#4e8fff' }}>
+            <div className="flex items-center gap-2 mb-1 pt-5">
+              {/* Superset drag handle */}
+              <div
+                onPointerDown={(e) => groupDrag.start(e, { fromIdx: gIdx })}
+                style={{ cursor: groupDrag.active ? 'grabbing' : 'grab', touchAction: 'none' }}
+                className="shrink-0 -ml-1"
+              >
+                <DragDots small />
+              </div>
+              <span className="flex-1 text-xs font-semibold tracking-widest uppercase" style={{ color: '#4e8fff' }}>
                 Superset {gIdx + 1}
               </span>
               {groups.length > 1 && (
@@ -188,9 +237,9 @@ export function ExercisesTab({ workout, onChange }: Props) {
             )}
 
             {group.exercises.map((ex, exIdx) => {
-              const isDragging = activeDrag?.exId === ex.id
-              const showDropAbove = isDraggingGroup && dropTarget === exIdx &&
-                !(dropTarget === activeDrag?.fromIdx || dropTarget === activeDrag?.fromIdx + 1)
+              const isDragging = exDrag.active?.exId === ex.id
+              const showDropAbove = isDraggingExInThisGroup && exDrag.dropTarget === exIdx &&
+                !(exDrag.dropTarget === exDrag.active?.fromIdx || exDrag.dropTarget === exDrag.active!.fromIdx + 1)
               const hasCustomWork = ex.workTime !== undefined
               const hasCustomRest = ex.restTime !== undefined
               const isLastEx = exIdx === group.exercises.length - 1
@@ -211,14 +260,13 @@ export function ExercisesTab({ workout, onChange }: Props) {
                   {showDropAbove && (
                     <div style={{ height: 2, backgroundColor: '#4e8fff', borderRadius: 1 }} />
                   )}
-
                   <div
                     className="flex items-center gap-3 py-3.5"
                     style={{ opacity: isDragging ? 0.3 : 1, transition: isDragging ? 'none' : 'opacity 0.15s' }}
                   >
                     <div
-                      onPointerDown={(e) => startDrag(e, group.id, ex.id, exIdx)}
-                      style={{ cursor: activeDrag ? 'grabbing' : 'grab', touchAction: 'none' }}
+                      onPointerDown={(e) => exDrag.start(e, { groupId: group.id, exId: ex.id, fromIdx: exIdx })}
+                      style={{ cursor: exDrag.active ? 'grabbing' : 'grab', touchAction: 'none' }}
                       className="shrink-0"
                     >
                       <DragDots />
@@ -246,7 +294,6 @@ export function ExercisesTab({ workout, onChange }: Props) {
                       </button>
                     )}
 
-                    {/* Work time badge */}
                     <button
                       onClick={() => openExtra('work')}
                       className="shrink-0 px-2 py-1 rounded-lg text-xs tabular-nums transition-colors"
@@ -258,7 +305,6 @@ export function ExercisesTab({ workout, onChange }: Props) {
                       {hasCustomWork ? `${ex.workTime}s` : `${workout.workTime}s`}
                     </button>
 
-                    {/* Rest time badge (between exercises) */}
                     {!isLastEx && (
                       <button
                         onClick={() => openExtra('rest')}
@@ -283,12 +329,9 @@ export function ExercisesTab({ workout, onChange }: Props) {
                     </button>
                   </div>
 
-                  {/* Inline editor for work or rest time */}
                   {(isEditingWork || isEditingRest) && (
                     <div className="flex items-center gap-3 pb-3 pl-10">
-                      <span className="text-white/30 text-xs">
-                        {isEditingWork ? 'Work time:' : 'Rest after:'}
-                      </span>
+                      <span className="text-white/30 text-xs">{isEditingWork ? 'Work time:' : 'Rest after:'}</span>
                       <input
                         ref={extraInputRef}
                         type="number"
@@ -328,7 +371,7 @@ export function ExercisesTab({ workout, onChange }: Props) {
             })}
 
             {/* Drop indicator at end of exercise list */}
-            {isDraggingGroup && dropTarget === group.exercises.length && (
+            {isDraggingExInThisGroup && exDrag.dropTarget === group.exercises.length && (
               <div style={{ height: 2, backgroundColor: '#4e8fff', borderRadius: 1, margin: '2px 0' }} />
             )}
 
@@ -341,66 +384,83 @@ export function ExercisesTab({ workout, onChange }: Props) {
               <span className="text-sm">Add exercise</span>
             </button>
 
-            {/* Superset rest — shown between supersets */}
-            {groups.length > 1 && gIdx < groups.length - 1 && (
-              <div style={{ borderTop: '1px solid rgba(78,143,255,0.08)', marginTop: 4 }}>
-                {editingGroupRest === group.id ? (
-                  <div className="flex items-center gap-3 py-3">
-                    <span className="text-white/30 text-xs flex-1">Rest after superset</span>
-                    <input
-                      ref={groupRestInputRef}
-                      type="number"
-                      min={0}
-                      max={600}
-                      step={5}
-                      defaultValue={group.restAfter ?? workout.cycleBreak}
-                      className="w-14 bg-transparent text-white text-sm text-center focus:outline-none border-b border-white/30"
-                      onBlur={(e) => {
-                        const val = parseInt(e.target.value)
-                        updateGroupRest(group.id, isNaN(val) ? undefined : Math.max(0, val))
-                        setEditingGroupRest(null)
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') e.currentTarget.blur()
-                        if (e.key === 'Escape') setEditingGroupRest(null)
-                      }}
-                      autoFocus
-                    />
-                    <span className="text-white/30 text-xs">sec</span>
-                    {group.restAfter !== undefined && (
+            {/* Per-superset timing overrides */}
+            <div style={{ borderTop: '1px solid rgba(78,143,255,0.08)', marginTop: 2 }}>
+              {(['setBreak', 'restAfter'] as const).map((field) => {
+                const isLast = gIdx === groups.length - 1
+                if (field === 'restAfter' && (groups.length <= 1 || isLast)) return null
+
+                const label = field === 'setBreak' ? 'Rest between sets' : 'Rest after superset'
+                const value = group[field]
+                const defaultVal = workout.cycleBreak
+                const isEditing = editingGroupField?.id === group.id && editingGroupField.field === field
+
+                return (
+                  <div key={field}>
+                    {isEditing ? (
+                      <div className="flex items-center gap-3 py-2.5">
+                        <span className="text-white/25 text-xs flex-1">{label}</span>
+                        <input
+                          ref={groupFieldInputRef}
+                          type="number"
+                          min={0}
+                          max={600}
+                          step={5}
+                          defaultValue={value ?? defaultVal}
+                          className="w-14 bg-transparent text-white text-sm text-center focus:outline-none border-b border-white/30"
+                          onBlur={(e) => {
+                            const val = parseInt(e.target.value)
+                            updateGroupMeta(group.id, { [field]: isNaN(val) ? undefined : Math.max(0, val) })
+                            setEditingGroupField(null)
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') e.currentTarget.blur()
+                            if (e.key === 'Escape') setEditingGroupField(null)
+                          }}
+                          autoFocus
+                        />
+                        <span className="text-white/25 text-xs">sec</span>
+                        {value !== undefined && (
+                          <button
+                            onClick={() => { updateGroupMeta(group.id, { [field]: undefined }); setEditingGroupField(null) }}
+                            className="text-white/25 text-xs hover:text-white/50 transition-colors"
+                          >
+                            reset
+                          </button>
+                        )}
+                      </div>
+                    ) : (
                       <button
-                        onClick={() => { updateGroupRest(group.id, undefined); setEditingGroupRest(null) }}
-                        className="text-white/25 text-xs hover:text-white/50 transition-colors"
+                        onClick={() => {
+                          setEditingGroupField({ id: group.id, field })
+                          setTimeout(() => groupFieldInputRef.current?.focus(), 50)
+                        }}
+                        className="flex items-center justify-between w-full py-2.5"
                       >
-                        reset
+                        <span className="text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>{label}</span>
+                        <span
+                          className="px-2 py-1 rounded-lg text-xs tabular-nums"
+                          style={{
+                            backgroundColor: value !== undefined ? 'rgba(0,217,160,0.12)' : 'rgba(255,255,255,0.05)',
+                            color: value !== undefined ? '#00d9a0' : 'rgba(255,255,255,0.25)',
+                          }}
+                        >
+                          {value !== undefined ? `${value}s` : `${defaultVal}s`}
+                        </span>
                       </button>
                     )}
                   </div>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setEditingGroupRest(group.id)
-                      setTimeout(() => groupRestInputRef.current?.focus(), 50)
-                    }}
-                    className="flex items-center justify-between w-full py-3"
-                  >
-                    <span className="text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>Rest after superset</span>
-                    <span
-                      className="px-2 py-1 rounded-lg text-xs tabular-nums"
-                      style={{
-                        backgroundColor: group.restAfter !== undefined ? 'rgba(0,217,160,0.12)' : 'rgba(255,255,255,0.05)',
-                        color: group.restAfter !== undefined ? '#00d9a0' : 'rgba(255,255,255,0.25)',
-                      }}
-                    >
-                      {group.restAfter !== undefined ? `${group.restAfter}s` : `${workout.cycleBreak}s`}
-                    </span>
-                  </button>
-                )}
-              </div>
-            )}
+                )
+              })}
+            </div>
           </div>
         )
       })}
+
+      {/* Drop indicator at end of group list */}
+      {groupDrag.active !== null && groupDrag.dropTarget === groups.length && (
+        <div style={{ height: 2, backgroundColor: '#4e8fff', borderRadius: 1, margin: '4px 0' }} />
+      )}
 
       {/* Add superset */}
       <div className="mt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>

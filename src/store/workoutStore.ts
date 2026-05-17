@@ -75,6 +75,7 @@ interface WorkoutStore {
   recordSession: (session: Omit<CompletedSession, 'id'>) => void
   clearHistory: () => void
   setSoundEnabled: (v: boolean) => void
+  togglePin: (id: string) => void
 }
 
 export const useWorkoutStore = create<WorkoutStore>()(
@@ -102,6 +103,12 @@ export const useWorkoutStore = create<WorkoutStore>()(
         })),
       clearHistory: () => set({ sessions: [] }),
       setSoundEnabled: (v) => set({ soundEnabled: v }),
+      togglePin: (id) =>
+        set((state) => ({
+          workouts: state.workouts.map((w) =>
+            w.id === id ? { ...w, pinned: !w.pinned } : w
+          ),
+        })),
     }),
     {
       name: 'my-workouts-store',
