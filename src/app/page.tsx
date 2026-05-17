@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWorkoutStore } from '@/store/workoutStore'
 import { WorkoutCard } from '@/components/workout/WorkoutCard'
 import { WorkoutDetail } from '@/components/workout/WorkoutDetail'
 import { generateId } from '@/lib/workoutUtils'
 import { exportWorkouts, parseImportFile } from '@/lib/exportImport'
+import { useDrag } from '@/hooks/useDrag'
 import type { Workout, WorkoutType } from '@/types/workout'
 
 function relativeDate(ts: number): string {
@@ -43,25 +44,45 @@ function newWorkout(type: WorkoutType): Workout {
 
 export default function HomePage() {
   const router = useRouter()
-  const { workouts, sessions, addWorkout, clearHistory } = useWorkoutStore()
+  const { workouts, sessions, addWorkout, clearHistory, moveWorkout } = useWorkoutStore()
   const [showPicker, setShowPicker] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
   const importInputRef = useRef<HTMLInputElement>(null)
-
-  const sorted = useMemo(() => {
-    const pinned = workouts.filter((w) => w.pinned)
-    const rest = workouts.filter((w) => !w.pinned)
-    return [...pinned, ...rest]
-  }, [workouts])
+  const rowEls = useRef<Map<string, HTMLElement>>(new Map())
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return sorted
+    if (!query.trim()) return workouts
     const q = query.toLowerCase()
-    return sorted.filter((w) => w.name.toLowerCase().includes(q))
-  }, [sorted, query])
+    return workouts.filter((w) => w.name.toLowerCase().includes(q))
+  }, [workouts, query])
+
+  const getDropIdx = useCallback((y: number) => {
+    let best = workouts.length
+    let bestDist = Infinity
+    workouts.forEach((w, i) => {
+      const el = rowEls.current.get(w.id)
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      const mid = rect.top + rect.height / 2
+      const dist = Math.abs(y - mid)
+      if (dist < bestDist) { bestDist = dist; best = y < mid ? i : i + 1 }
+    })
+    return best
+  }, [workouts])
+
+  const { active: dragActive, dropTarget, start: startDrag } = useDrag<{ fromIdx: number; id: string }>(
+    (drag, dropIdx) => {
+      const next = [...workouts]
+      const [item] = next.splice(drag.fromIdx, 1)
+      const insertAt = dropIdx > drag.fromIdx ? dropIdx - 1 : dropIdx
+      next.splice(insertAt, 0, item)
+      moveWorkout(next)
+    },
+    getDropIdx
+  )
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -207,14 +228,32 @@ export default function HomePage() {
         ) : filtered.length === 0 ? (
           <p className="text-white/20 text-sm py-10 text-center">No workouts match "{query}"</p>
         ) : (
-          filtered.map((workout) => (
-            <WorkoutCard
-              key={workout.id}
-              workout={workout}
-              onSelect={handleSelect}
-              selected={selectedId === workout.id}
-            />
-          ))
+          filtered.map((workout, i) => {
+            const globalIdx = workouts.indexOf(workout)
+            const isDragging = dragActive?.id === workout.id
+            const canDrag = !query.trim()
+            return (
+              <div key={workout.id} style={{ position: 'relative' }}>
+                {canDrag && dropTarget === i && dragActive && dragActive.id !== workout.id && (
+                  <div className="h-0.5 rounded-full mx-2 mb-1" style={{ backgroundColor: '#f0407a' }} />
+                )}
+                <div
+                  ref={(el) => { if (el) rowEls.current.set(workout.id, el); else rowEls.current.delete(workout.id) }}
+                  style={{ opacity: isDragging ? 0.4 : 1, transition: 'opacity 0.15s' }}
+                >
+                  <WorkoutCard
+                    workout={workout}
+                    onSelect={handleSelect}
+                    selected={selectedId === workout.id}
+                    onDragHandlePointerDown={canDrag ? (e) => startDrag(e, { fromIdx: globalIdx, id: workout.id }) : undefined}
+                  />
+                </div>
+              </div>
+            )
+          })
+        )}
+        {!query.trim() && dropTarget === workouts.length && dragActive && (
+          <div className="h-0.5 rounded-full mx-2 mt-1" style={{ backgroundColor: '#f0407a' }} />
         )}
 
         {/* Session history */}

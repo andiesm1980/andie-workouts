@@ -16,16 +16,6 @@ function formatTime(seconds: number) {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-const PHASE_CONFIG: Record<Phase, { color: string; label: string }> = {
-  idle:     { color: '#4b5a70', label: 'Ready' },
-  warmup:   { color: '#4e8fff', label: 'Get Ready' },
-  work:     { color: '#f0407a', label: 'Work' },
-  rest:     { color: '#00d9a0', label: 'Rest' },
-  break:    { color: '#4e8fff', label: 'Break' },
-  cooldown: { color: '#a87dff', label: 'Cool Down' },
-  complete: { color: '#ffcb38', label: 'Done' },
-}
-
 const RADIUS = 80
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 const OUTER_RADIUS = 92
@@ -44,10 +34,20 @@ export function TimerDisplay({ workout }: Props) {
   const sessionRecorded = useRef(false)
   const autoStartFired = useRef(false)
 
-  // Sync sound flag into audio module
+  const accentColor = workout.accentColor ?? '#f0407a'
+
+  const PHASE_CONFIG: Record<Phase, { color: string; label: string }> = {
+    idle:     { color: '#4b5a70', label: 'Ready' },
+    warmup:   { color: '#4e8fff', label: 'Get Ready' },
+    work:     { color: accentColor, label: 'Work' },
+    rest:     { color: '#00d9a0', label: 'Rest' },
+    break:    { color: '#4e8fff', label: 'Break' },
+    cooldown: { color: '#a87dff', label: 'Cool Down' },
+    complete: { color: '#ffcb38', label: 'Done' },
+  }
+
   useEffect(() => { setSoundEnabled(soundEnabled) }, [soundEnabled])
 
-  // Auto-start
   useEffect(() => {
     if (workout.autoStart && !autoStartFired.current) {
       autoStartFired.current = true
@@ -56,63 +56,41 @@ export function TimerDisplay({ workout }: Props) {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Record session once when complete
   useEffect(() => {
     if (timer.isComplete && !sessionRecorded.current) {
       sessionRecorded.current = true
       const total = timer.segments.reduce((s, seg) => s + seg.duration, 0)
       recordSession({ workoutId: workout.id, workoutName: workout.name, date: Date.now(), durationSeconds: total })
     }
-  }, [timer.isComplete])
+  }, [timer.isComplete]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { color, label } = PHASE_CONFIG[timer.phase]
 
-  const handleToggle = () => {
-    initAudio()
-    haptic('tap')
-    timer.toggle()
-  }
-
+  const handleToggle = () => { initAudio(); haptic('tap'); timer.toggle() }
   const toggleSound = () => storeSoundEnabled(!soundEnabled)
-
   const handleSkipNext = () => {
     haptic('tap')
     if (workout.type === 'circuit') timer.skipToNextExercise()
     else timer.skipToNext()
   }
+  const handleSkipPrev = () => { haptic('tap'); timer.skipToPrev() }
+  const handleQuit = () => { timer.reset(); router.push('/') }
 
-  const handleSkipPrev = () => {
-    haptic('tap')
-    timer.skipToPrev()
-  }
+  const isSkippable = timer.phase === 'rest' || timer.phase === 'break'
 
-  const handleQuit = () => {
-    timer.reset()
-    router.push('/')
-  }
-
-  // Ring: drains from full → empty as time elapses, fills to full on complete
-  const ringProgress = timer.isComplete
-    ? 0
-    : timer.totalTime > 0 ? 1 - timer.timeRemaining / timer.totalTime : 0
+  const ringProgress = timer.isComplete ? 0 : timer.totalTime > 0 ? 1 - timer.timeRemaining / timer.totalTime : 0
   const dashOffset = CIRCUMFERENCE * ringProgress
-
-  // Bottom bar times + overall progress
   const segsBefore = timer.segments.slice(0, timer.segmentIndex)
   const elapsed = segsBefore.reduce((s, seg) => s + seg.duration, 0) +
     ((timer.segments[timer.segmentIndex]?.duration ?? 0) - timer.timeRemaining)
   const segsAfter = timer.segments.slice(timer.segmentIndex + 1)
-  const workoutRemaining = timer.isComplete
-    ? 0
-    : timer.timeRemaining + segsAfter.reduce((s, seg) => s + seg.duration, 0)
+  const workoutRemaining = timer.isComplete ? 0 : timer.timeRemaining + segsAfter.reduce((s, seg) => s + seg.duration, 0)
   const totalWorkoutDuration = timer.segments.reduce((s, seg) => s + seg.duration, 0)
   const overallProgress = timer.isComplete ? 1 : totalWorkoutDuration > 0 ? elapsed / totalWorkoutDuration : 0
   const outerDashOffset = OUTER_CIRCUMFERENCE * (1 - overallProgress)
+  const showCounters = timer.currentRound > 0 && !timer.isComplete && timer.phase !== 'warmup' && timer.phase !== 'cooldown'
 
-  const showCounters = timer.currentRound > 0 && !timer.isComplete &&
-    timer.phase !== 'warmup' && timer.phase !== 'cooldown'
-
-  // Completion stats (computed unconditionally to avoid IIFE in JSX)
+  // Completion stats
   const allSegsDur = timer.segments.reduce((s, seg) => s + seg.duration, 0)
   const workSegs = timer.segments.filter((s) => s.phase === 'work')
   const totalWorkDur = workSegs.reduce((s, seg) => s + seg.duration, 0)
@@ -121,10 +99,18 @@ export function TimerDisplay({ workout }: Props) {
     : workSegs.length
   const completionStatLabel = workout.type === 'circuit' ? 'Exercises' : 'Intervals'
 
-  // Shared ring SVG for active state
+  // Circuit exercise list
+  const currentGroupExercises = workout.type === 'circuit'
+    ? (workout.exerciseGroups ?? [])[timer.currentGroup - 1]?.exercises ?? []
+    : []
+
   const activeRing = (
-    <div className="relative flex items-center justify-center">
-      <svg viewBox="0 0 200 200" className="w-[65vw] max-w-[265px] md:w-[min(46vh,300px)] md:max-w-none">
+    <div
+      className="relative flex items-center justify-center"
+      onClick={isSkippable ? handleSkipNext : undefined}
+      style={{ cursor: isSkippable ? 'pointer' : 'default' }}
+    >
+      <svg viewBox="0 0 200 200" className="w-[65vw] max-w-[265px] @[600px]:w-[min(46vh,300px)] @[600px]:max-w-none">
         <circle cx="100" cy="100" r={OUTER_RADIUS} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="2.5" />
         <circle cx="100" cy="100" r={OUTER_RADIUS} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="2.5"
           strokeLinecap="round" strokeDasharray={OUTER_CIRCUMFERENCE} strokeDashoffset={outerDashOffset}
@@ -134,18 +120,21 @@ export function TimerDisplay({ workout }: Props) {
           strokeDasharray={CIRCUMFERENCE} strokeDashoffset={dashOffset} transform="rotate(-90 100 100)"
           style={{ transition: 'stroke-dashoffset 0.9s linear, stroke 0.5s ease', filter: `drop-shadow(0 0 9px ${color}cc)` }} />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
         <p key={timer.timeRemaining} className="text-white font-light tabular-nums"
           style={{ fontSize: 'clamp(34px, 10.5vw, 52px)', fontVariantNumeric: 'tabular-nums', letterSpacing: '-1px', animation: 'timeStep 0.22s ease-out' }}>
           {formatTime(timer.timeRemaining)}
         </p>
+        {isSkippable && (
+          <p className="text-white/20 text-xs">tap to skip</p>
+        )}
       </div>
     </div>
   )
 
   const completeRing = (
     <div className="relative flex items-center justify-center">
-      <svg viewBox="0 0 200 200" className="w-[52vw] max-w-[210px] md:w-[min(36vh,240px)] md:max-w-none">
+      <svg viewBox="0 0 200 200" className="w-[52vw] max-w-[210px] @[600px]:w-[min(36vh,240px)] @[600px]:max-w-none">
         <circle cx="100" cy="100" r={RADIUS} fill="none" stroke="rgba(250,204,21,0.15)" strokeWidth="10" />
         <circle cx="100" cy="100" r={RADIUS} fill="none" stroke="#ffcb38" strokeWidth="10" strokeLinecap="round"
           strokeDasharray={CIRCUMFERENCE} strokeDashoffset={0} transform="rotate(-90 100 100)" />
@@ -157,13 +146,11 @@ export function TimerDisplay({ workout }: Props) {
   )
 
   return (
-    <div className="flex flex-col h-[100dvh] select-none" style={{ backgroundColor: '#0c0c0f' }}>
+    <div className="@container flex flex-col h-[100dvh] select-none" style={{ backgroundColor: '#0c0c0f' }}>
 
-      {/* Top bar — full width */}
-      <div
-        className="shrink-0 flex items-center justify-between px-5 md:px-8"
-        style={{ paddingTop: 'max(env(safe-area-inset-top), 18px)', paddingBottom: 10 }}
-      >
+      {/* Top bar */}
+      <div className="shrink-0 flex items-center justify-between px-5 @[600px]:px-8"
+        style={{ paddingTop: 'max(env(safe-area-inset-top), 18px)', paddingBottom: 10 }}>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowQuitConfirm(true)}
             className="w-9 h-9 flex items-center justify-center rounded-full transition-colors active:scale-90"
@@ -188,9 +175,7 @@ export function TimerDisplay({ workout }: Props) {
             )}
           </button>
         </div>
-
-        <span className="text-white/30 text-sm truncate max-w-[160px] md:max-w-xs">{workout.name}</span>
-
+        <span className="text-white/30 text-sm truncate max-w-[160px] @[600px]:max-w-xs">{workout.name}</span>
         <div className="text-right min-w-[48px]">
           {showCounters && workout.type === 'circuit' && timer.totalGroups > 1 && (
             <p className="text-white/55 text-sm font-semibold leading-tight tabular-nums">{timer.currentGroup}/{timer.totalGroups}</p>
@@ -201,23 +186,23 @@ export function TimerDisplay({ workout }: Props) {
         </div>
       </div>
 
-      {/* Main content: single column → two columns on md+ */}
-      <div className="flex-1 min-h-0 flex flex-col md:flex-row">
+      {/* Main: single column → two column at 600px container width */}
+      <div className="flex-1 min-h-0 flex flex-col @[600px]:flex-row">
 
         {/* Left / Top: ring */}
-        <div className="flex items-center justify-center px-6 pt-4 pb-2 md:flex-1 md:pt-0 md:pb-0">
+        <div className="flex items-center justify-center px-6 pt-4 pb-2 @[600px]:flex-1 @[600px]:pt-0 @[600px]:pb-0">
           {timer.isComplete ? completeRing : activeRing}
         </div>
 
         {/* Right / Bottom: phase info + controls */}
-        <div className="flex flex-col md:flex-1 md:justify-center">
+        <div className="flex flex-col @[600px]:flex-1 @[600px]:justify-center">
 
-          {/* Phase / exercise info */}
-          <div className="text-center md:text-left px-6 md:px-10 mb-2 md:mb-8">
+          {/* Info */}
+          <div className="text-center @[600px]:text-left px-6 @[600px]:px-10 mb-2 @[600px]:mb-6">
             {timer.isComplete ? (
               <>
                 <p className="text-white text-xl font-semibold mb-4">Workout complete</p>
-                <div className="flex gap-3 md:flex-wrap">
+                <div className="flex gap-3 flex-wrap @[600px]:justify-start justify-center">
                   {[
                     { label: 'Duration', value: formatDuration(allSegsDur) },
                     { label: 'Work', value: formatDuration(totalWorkDur) },
@@ -243,7 +228,30 @@ export function TimerDisplay({ workout }: Props) {
                 ) : (
                   <p className="text-white/40 text-base font-light">{label}</p>
                 )}
-                {timer.segmentIndex < timer.segments.length - 1 && (
+
+                {/* Circuit exercise list */}
+                {workout.type === 'circuit' && currentGroupExercises.length > 1 && (
+                  <div className="mt-3 flex flex-col gap-0.5 @[600px]:text-left">
+                    {currentGroupExercises.map((ex, i) => {
+                      const isCurrent = i === timer.exerciseIndex && timer.phase === 'work'
+                      const isDone = i < timer.exerciseIndex || (i === timer.exerciseIndex && timer.phase === 'rest')
+                      return (
+                        <div key={ex.id} className="flex items-center gap-2 py-0.5 px-2 rounded-lg -mx-2 transition-colors"
+                          style={{ backgroundColor: isCurrent ? `${accentColor}18` : 'transparent' }}>
+                          <div className="w-1.5 h-1.5 rounded-full shrink-0 transition-colors"
+                            style={{ backgroundColor: isCurrent ? accentColor : isDone ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.1)' }} />
+                          <span className="text-sm transition-colors truncate"
+                            style={{ color: isCurrent ? 'rgba(255,255,255,0.9)' : isDone ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.35)' }}>
+                            {ex.name}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Next up (when no exercise list) */}
+                {!(workout.type === 'circuit' && currentGroupExercises.length > 1) && timer.segmentIndex < timer.segments.length - 1 && (
                   <p className="text-white/20 text-xs mt-2">
                     Next — <span className="text-white/35">{timer.segments[timer.segmentIndex + 1].label} · {formatTime(timer.segments[timer.segmentIndex + 1].duration)}</span>
                   </p>
@@ -253,7 +261,8 @@ export function TimerDisplay({ workout }: Props) {
           </div>
 
           {/* Controls */}
-          <div className="shrink-0 px-6 md:px-10 pt-2 md:pt-0" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 20px)' }}>
+          <div className="shrink-0 px-6 @[600px]:px-10 pt-2 @[600px]:pt-0"
+            style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 20px)' }}>
             {timer.isComplete ? (
               <div className="flex gap-3">
                 <button onClick={timer.reset}
@@ -276,12 +285,12 @@ export function TimerDisplay({ workout }: Props) {
                   </button>
                 )}
                 <div className="flex items-center justify-center gap-12 mb-5">
-                  <button onClick={handleSkipPrev} className="transition-all active:scale-90" aria-label="Previous" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                  <button onClick={handleSkipPrev} className="transition-all active:scale-90" style={{ color: 'rgba(255,255,255,0.35)' }}>
                     <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" /></svg>
                   </button>
                   <button onClick={handleToggle}
                     className="rounded-full flex items-center justify-center transition-all active:scale-95 shadow-lg"
-                    style={{ backgroundColor: color, width: 70, height: 70 }} aria-label={timer.isRunning ? 'Pause' : 'Play'}>
+                    style={{ backgroundColor: color, width: 70, height: 70 }}>
                     {timer.isRunning ? (
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="#0a0a14">
                         <rect x="5" y="4" width="4" height="16" rx="1.5" /><rect x="15" y="4" width="4" height="16" rx="1.5" />
@@ -290,7 +299,7 @@ export function TimerDisplay({ workout }: Props) {
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="#0a0a14"><path d="M6 4l14 8-14 8V4z" /></svg>
                     )}
                   </button>
-                  <button onClick={handleSkipNext} className="transition-all active:scale-90" aria-label="Next" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                  <button onClick={handleSkipNext} className="transition-all active:scale-90" style={{ color: 'rgba(255,255,255,0.35)' }}>
                     <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6h2v12h-2z" /></svg>
                   </button>
                 </div>

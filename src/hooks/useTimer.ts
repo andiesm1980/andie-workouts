@@ -192,6 +192,7 @@ export function useTimer(workout: Workout) {
     currentGroup: (currentSegment?.groupIndex ?? -1) + 1,
     totalGroups: (workout.exerciseGroups ?? []).length,
     exerciseName: currentSegment?.label ?? '',
+    exerciseIndex: currentSegment?.exerciseIndex ?? 0,
     isRunning: state.isRunning,
     isComplete: state.isComplete,
     progress,

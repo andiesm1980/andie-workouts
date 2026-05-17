@@ -28,8 +28,33 @@ export function TimerSettingsTab({ workout, onChange }: Props) {
   )
   const [warmCoolOpen, setWarmCoolOpen] = useState((workout.cooldown || 0) > 0)
 
+  const ACCENT_COLORS = ['#f0407a', '#4e8fff', '#ff6b2b', '#00d9a0', '#a87dff', '#ffcb38']
+  const activeAccent = workout.accentColor ?? '#f0407a'
+
   return (
     <div className="px-5 pb-8">
+      {/* Colour */}
+      <div className="flex items-center justify-between py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+        <span className="text-white text-base">Colour</span>
+        <div className="flex gap-2.5">
+          {ACCENT_COLORS.map((c) => (
+            <button
+              key={c}
+              onClick={() => onChange({ accentColor: c })}
+              className="rounded-full transition-all active:scale-90"
+              style={{
+                width: 22, height: 22,
+                backgroundColor: c,
+                outline: activeAccent === c ? `2px solid ${c}` : 'none',
+                outlineOffset: 2,
+                opacity: activeAccent === c ? 1 : 0.45,
+              }}
+              aria-label={`Accent colour ${c}`}
+            />
+          ))}
+        </div>
+      </div>
+
       <IntervalPreview workout={workout} />
 
       <Row label="Work">

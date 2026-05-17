@@ -37,5 +37,7 @@ export interface Workout {
   exerciseGroups: ExerciseGroup[]
   autoStart?: boolean
   pinned?: boolean
+  accentColor?: string
+  notes?: string
   createdAt: number
 }

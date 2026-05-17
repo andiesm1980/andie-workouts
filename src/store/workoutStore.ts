@@ -76,6 +76,7 @@ interface WorkoutStore {
   clearHistory: () => void
   setSoundEnabled: (v: boolean) => void
   togglePin: (id: string) => void
+  moveWorkout: (newOrder: Workout[]) => void
 }
 
 export const useWorkoutStore = create<WorkoutStore>()(
@@ -104,11 +105,19 @@ export const useWorkoutStore = create<WorkoutStore>()(
       clearHistory: () => set({ sessions: [] }),
       setSoundEnabled: (v) => set({ soundEnabled: v }),
       togglePin: (id) =>
-        set((state) => ({
-          workouts: state.workouts.map((w) =>
-            w.id === id ? { ...w, pinned: !w.pinned } : w
-          ),
-        })),
+        set((state) => {
+          const idx = state.workouts.findIndex((w) => w.id === id)
+          if (idx === -1) return {}
+          const item = state.workouts[idx]
+          const toggled = { ...item, pinned: !item.pinned }
+          const rest = state.workouts.filter((w) => w.id !== id)
+          // When pinning, move to front; when unpinning, keep in place
+          const workouts = toggled.pinned
+            ? [toggled, ...rest]
+            : [...rest.slice(0, idx), toggled, ...rest.slice(idx)]
+          return { workouts }
+        }),
+      moveWorkout: (newOrder) => set({ workouts: newOrder }),
     }),
     {
       name: 'my-workouts-store',

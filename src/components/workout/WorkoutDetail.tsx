@@ -195,7 +195,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
               }}
               className="flex-1 py-1.5 rounded-lg text-xs font-semibold tracking-widest uppercase transition-all"
               style={{
-                backgroundColor: workout.type === t ? '#f0407a' : 'transparent',
+                backgroundColor: workout.type === t ? (workout.accentColor ?? '#f0407a') : 'transparent',
                 color: workout.type === t ? '#fff' : 'rgba(255,255,255,0.35)',
               }}
             >
@@ -236,12 +236,26 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
         )}
       </div>
 
+      {/* Notes */}
+      <div className="shrink-0 px-5 pb-2">
+        <textarea
+          value={workout.notes ?? ''}
+          onChange={(e) => update({ notes: e.target.value })}
+          placeholder="Notes…"
+          rows={2}
+          className="w-full bg-transparent text-white/50 text-sm resize-none focus:outline-none placeholder-white/20 leading-relaxed focus:text-white/70 transition-colors"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+          onFocus={(e) => { (e.target as HTMLTextAreaElement).rows = 4 }}
+          onBlur={(e) => { (e.target as HTMLTextAreaElement).rows = workout.notes ? 2 : 2 }}
+        />
+      </div>
+
       {/* Start button */}
       <div className="shrink-0 px-5 pt-3" style={{ paddingBottom: onClose ? 24 : 'max(env(safe-area-inset-bottom), 24px)' }}>
         <button
           onClick={() => router.push(`/timer/${workout.id}`)}
           className="w-full py-4 rounded-2xl font-semibold text-base transition-all active:scale-98"
-          style={{ backgroundColor: '#f0407a', color: '#ffffff' }}
+          style={{ backgroundColor: workout.accentColor ?? '#f0407a', color: '#ffffff' }}
         >
           Start - Total time {formatDuration(totalTime)}
         </button>
