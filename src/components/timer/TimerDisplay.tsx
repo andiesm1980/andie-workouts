@@ -112,6 +112,15 @@ export function TimerDisplay({ workout }: Props) {
   const showCounters = timer.currentRound > 0 && !timer.isComplete &&
     timer.phase !== 'warmup' && timer.phase !== 'cooldown'
 
+  // Completion stats (computed unconditionally to avoid IIFE in JSX)
+  const allSegsDur = timer.segments.reduce((s, seg) => s + seg.duration, 0)
+  const workSegs = timer.segments.filter((s) => s.phase === 'work')
+  const totalWorkDur = workSegs.reduce((s, seg) => s + seg.duration, 0)
+  const completionExCount = workout.type === 'circuit'
+    ? (workout.exerciseGroups ?? []).flatMap((g) => g.exercises ?? []).length
+    : workSegs.length
+  const completionStatLabel = workout.type === 'circuit' ? 'Exercises' : 'Intervals'
+
   return (
     <div className="flex flex-col h-[100dvh] select-none" style={{ backgroundColor: '#0c0c0f' }}>
     <div className="flex flex-col h-full w-full mx-auto" style={{ maxWidth: 480 }}>
@@ -174,48 +183,34 @@ export function TimerDisplay({ workout }: Props) {
       <div className="flex-1 flex flex-col items-center justify-center min-h-0 px-6">
 
         {timer.isComplete ? (
-          /* — Complete state — */
-          (() => {
-            const totalDur = timer.segments.reduce((s, seg) => s + seg.duration, 0)
-            const workSegs = timer.segments.filter((s) => s.phase === 'work')
-            const totalWorkDur = workSegs.reduce((s, seg) => s + seg.duration, 0)
-            const exCount = workout.type === 'circuit'
-              ? (workout.exerciseGroups ?? []).flatMap((g) => g.exercises ?? []).length
-              : workSegs.length
-            const statLabel = workout.type === 'circuit' ? 'Exercises' : 'Intervals'
-
-            return (
-              <div className="flex flex-col items-center gap-4">
-                <div className="relative flex items-center justify-center">
-                  <svg viewBox="0 0 200 200" className="w-[52vw] max-w-[210px]">
-                    <circle cx="100" cy="100" r={RADIUS} fill="none" stroke="rgba(250,204,21,0.15)" strokeWidth="10" />
-                    <circle cx="100" cy="100" r={RADIUS} fill="none" stroke="#ffcb38" strokeWidth="10" strokeLinecap="round"
-                      strokeDasharray={CIRCUMFERENCE} strokeDashoffset={0} transform="rotate(-90 100 100)" />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span style={{ fontSize: 'clamp(34px, 10vw, 48px)' }}>🎉</span>
-                  </div>
-                </div>
-
-                <p className="text-white text-xl font-semibold">Workout complete</p>
-
-                {/* Stats grid */}
-                <div className="flex gap-3 mt-1">
-                  {[
-                    { label: 'Duration', value: formatDuration(totalDur) },
-                    { label: 'Work', value: formatDuration(totalWorkDur) },
-                    { label: 'Rounds', value: String(timer.totalRounds) },
-                    { label: statLabel, value: String(exCount) },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="flex flex-col items-center px-3 py-2.5 rounded-2xl" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
-                      <span className="text-white font-semibold text-base tabular-nums">{value}</span>
-                      <span className="text-white/30 text-xs mt-0.5">{label}</span>
-                    </div>
-                  ))}
-                </div>
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative flex items-center justify-center">
+              <svg viewBox="0 0 200 200" className="w-[52vw] max-w-[210px]">
+                <circle cx="100" cy="100" r={RADIUS} fill="none" stroke="rgba(250,204,21,0.15)" strokeWidth="10" />
+                <circle cx="100" cy="100" r={RADIUS} fill="none" stroke="#ffcb38" strokeWidth="10" strokeLinecap="round"
+                  strokeDasharray={CIRCUMFERENCE} strokeDashoffset={0} transform="rotate(-90 100 100)" />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span style={{ fontSize: 'clamp(34px, 10vw, 48px)' }}>🎉</span>
               </div>
-            )
-          })()
+            </div>
+
+            <p className="text-white text-xl font-semibold">Workout complete</p>
+
+            <div className="flex gap-3 mt-1">
+              {[
+                { label: 'Duration', value: formatDuration(allSegsDur) },
+                { label: 'Work', value: formatDuration(totalWorkDur) },
+                { label: 'Rounds', value: String(timer.totalRounds) },
+                { label: completionStatLabel, value: String(completionExCount) },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex flex-col items-center px-3 py-2.5 rounded-2xl" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                  <span className="text-white font-semibold text-base tabular-nums">{value}</span>
+                  <span className="text-white/30 text-xs mt-0.5">{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         ) : (
           <>
             {/* Ring */}

@@ -19,6 +19,7 @@ export interface CompletedSession {
 export interface ExerciseGroup {
   id: string
   exercises: Exercise[]
+  restAfter?: number // rest between this superset and the next (overrides cycleBreak)
 }
 
 export interface Workout {

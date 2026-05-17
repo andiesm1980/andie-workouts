@@ -63,8 +63,11 @@ export function buildSegments(workout: Workout): Segment[] {
         }
       }
 
-      if (!isLastGroup && cycleBreak > 0) {
-        segments.push({ phase: 'break', duration: cycleBreak, label: 'Break', round: rounds, exerciseIndex: 0, groupIndex: gIdx })
+      if (!isLastGroup) {
+        const groupBreak = group.restAfter !== undefined ? group.restAfter : cycleBreak
+        if (groupBreak > 0) {
+          segments.push({ phase: 'break', duration: groupBreak, label: 'Superset Rest', round: rounds, exerciseIndex: 0, groupIndex: gIdx })
+        }
       }
     }
   }
