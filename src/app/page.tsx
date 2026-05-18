@@ -300,7 +300,7 @@ export default function HomePage() {
 
       {/* Sidebar — full width on mobile, 360px on desktop */}
       <div
-        className="flex flex-col h-full w-full md:w-[360px] md:shrink-0 md:border-r"
+        className="flex flex-col h-full w-full md:w-[45%] md:shrink-0 md:border-r"
         style={{ borderColor: 'rgba(255,255,255,0.06)' }}
       >
         {sidebar}
