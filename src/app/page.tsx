@@ -298,9 +298,9 @@ export default function HomePage() {
   return (
     <div className="flex h-[100dvh] overflow-hidden" style={{ backgroundColor: '#0c0c0f' }}>
 
-      {/* Sidebar — full width on mobile, 300px on desktop */}
+      {/* Sidebar — full width on mobile, 360px on desktop */}
       <div
-        className="flex flex-col h-full w-full md:w-[300px] md:shrink-0 md:border-r"
+        className="flex flex-col h-full w-full md:w-[360px] md:shrink-0 md:border-r"
         style={{ borderColor: 'rgba(255,255,255,0.06)' }}
       >
         {sidebar}
@@ -316,17 +316,30 @@ export default function HomePage() {
             onDuplicate={(newId) => setSelectedId(newId)}
           />
         ) : (
-          <div className="flex flex-col items-center justify-center h-full gap-4">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-2" style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
-                <polyline points="13 2 13 9 20 9" />
+          <div className="flex flex-col items-center justify-center h-full gap-5">
+            {/* Icon with accent glow */}
+            <div
+              className="w-20 h-20 rounded-3xl flex items-center justify-center"
+              style={{
+                background: 'radial-gradient(circle at 40% 35%, rgba(240,64,122,0.18) 0%, rgba(255,255,255,0.04) 70%)',
+                border: '1px solid rgba(240,64,122,0.2)',
+                boxShadow: '0 0 40px rgba(240,64,122,0.08)',
+              }}
+            >
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(240,64,122,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
               </svg>
             </div>
-            <p className="text-white/25 text-sm">Select a workout to edit</p>
+
+            <div className="text-center">
+              <p className="text-white/70 text-base font-medium mb-1">No workout selected</p>
+              <p className="text-white/30 text-sm">Pick one from the list or create a new one</p>
+            </div>
+
             <button
               onClick={() => setShowPicker(true)}
-              className="mt-2 px-5 py-2.5 rounded-xl text-sm font-semibold border border-white/10 text-white/40 hover:text-white/60 hover:border-white/20 transition-all"
+              className="mt-1 px-6 py-3 rounded-xl text-sm font-semibold transition-all active:scale-95"
+              style={{ backgroundColor: '#f0407a', color: '#fff' }}
             >
               + New workout
             </button>
