@@ -69,6 +69,8 @@ interface WorkoutStore {
   workouts: Workout[]
   sessions: CompletedSession[]
   soundEnabled: boolean
+  reminderDays: number   // 0 = off, 7, 30, 90
+  lastBackupAt: number   // ms timestamp of last export
   addWorkout: (workout: Workout) => void
   updateWorkout: (id: string, updates: Partial<Workout>) => void
   deleteWorkout: (id: string) => void
@@ -77,6 +79,8 @@ interface WorkoutStore {
   setSoundEnabled: (v: boolean) => void
   togglePin: (id: string) => void
   moveWorkout: (newOrder: Workout[]) => void
+  setReminderDays: (days: number) => void
+  setLastBackupAt: (ts: number) => void
 }
 
 export const useWorkoutStore = create<WorkoutStore>()(
@@ -85,6 +89,8 @@ export const useWorkoutStore = create<WorkoutStore>()(
       workouts: DEFAULT_WORKOUTS,
       sessions: [],
       soundEnabled: true,
+      reminderDays: 30,
+      lastBackupAt: 0,
       addWorkout: (workout) =>
         set((state) => ({ workouts: [workout, ...state.workouts] })),
       updateWorkout: (id, updates) =>
@@ -118,12 +124,14 @@ export const useWorkoutStore = create<WorkoutStore>()(
           return { workouts }
         }),
       moveWorkout: (newOrder) => set({ workouts: newOrder }),
+      setReminderDays: (days) => set({ reminderDays: days }),
+      setLastBackupAt: (ts) => set({ lastBackupAt: ts }),
     }),
     {
       name: 'my-workouts-store',
-      version: 4,
+      version: 5,
       migrate: (persisted: unknown, fromVersion: number) => {
-        const state = persisted as { workouts: any[]; sessions?: any[]; soundEnabled?: boolean }
+        const state = persisted as { workouts: any[]; sessions?: any[]; soundEnabled?: boolean; reminderDays?: number; lastBackupAt?: number }
 
         if (fromVersion < 2) {
           state.workouts = (state.workouts ?? []).map((w: any) => ({
@@ -153,6 +161,11 @@ export const useWorkoutStore = create<WorkoutStore>()(
         if (fromVersion < 4) {
           state.sessions = state.sessions ?? []
           state.soundEnabled = state.soundEnabled ?? true
+        }
+
+        if (fromVersion < 5) {
+          state.reminderDays = state.reminderDays ?? 30
+          state.lastBackupAt = state.lastBackupAt ?? 0
         }
 
         return state

@@ -44,13 +44,27 @@ function newWorkout(type: WorkoutType): Workout {
 
 export default function HomePage() {
   const router = useRouter()
-  const { workouts, sessions, addWorkout, clearHistory, moveWorkout } = useWorkoutStore()
+  const { workouts, sessions, addWorkout, clearHistory, moveWorkout, reminderDays, lastBackupAt, setReminderDays, setLastBackupAt } = useWorkoutStore()
   const [showPicker, setShowPicker] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
+  const [reminderDismissed, setReminderDismissed] = useState(false)
   const importInputRef = useRef<HTMLInputElement>(null)
+
+  // Use oldest workout createdAt as proxy for "installed at"
+  const baseBackupTime = useMemo(() => {
+    if (lastBackupAt > 0) return lastBackupAt
+    if (workouts.length === 0) return Date.now()
+    return Math.min(...workouts.map((w) => w.createdAt))
+  }, [lastBackupAt, workouts])
+
+  const reminderDue = !reminderDismissed
+    && reminderDays > 0
+    && workouts.length > 0
+    && Date.now() - baseBackupTime > reminderDays * 86_400_000
   const rowEls = useRef<Map<string, HTMLElement>>(new Map())
 
   const filtered = useMemo(() => {
@@ -145,7 +159,7 @@ export default function HomePage() {
           <div className="flex items-center gap-1">
             {/* Export */}
             <button
-              onClick={() => exportWorkouts(workouts)}
+              onClick={() => { exportWorkouts(workouts); setLastBackupAt(Date.now()); setReminderDismissed(false) }}
               className="w-9 h-9 flex items-center justify-center rounded-xl transition-all active:scale-95 text-white/35 hover:text-white/60"
               aria-label="Export workouts"
               title="Export workouts"
@@ -167,6 +181,18 @@ export default function HomePage() {
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 5 17 10" />
                 <line x1="12" y1="5" x2="12" y2="17" />
+              </svg>
+            </button>
+            {/* Settings */}
+            <button
+              onClick={() => setShowSettings(true)}
+              className="w-9 h-9 flex items-center justify-center rounded-xl transition-all active:scale-95 text-white/35 hover:text-white/60"
+              aria-label="Settings"
+              title="Backup reminder settings"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
             </button>
             {/* New */}
@@ -210,6 +236,32 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {/* Backup reminder banner */}
+      {reminderDue && (
+        <div className="mx-6 mb-3 rounded-2xl px-4 py-3" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <p className="text-white/80 text-sm font-medium leading-snug">Time to back up your workouts</p>
+            <button onClick={() => setReminderDismissed(true)} className="text-white/25 hover:text-white/50 shrink-0 mt-0.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+          <p className="text-white/35 text-xs mb-3">
+            {lastBackupAt > 0
+              ? `Last backup ${Math.floor((Date.now() - lastBackupAt) / 86_400_000)} days ago`
+              : 'You haven\'t backed up yet'}
+          </p>
+          <button
+            onClick={() => { exportWorkouts(workouts); setLastBackupAt(Date.now()); setReminderDismissed(true) }}
+            className="w-full py-2 rounded-xl text-sm font-semibold transition-all active:scale-95"
+            style={{ backgroundColor: '#f0407a', color: '#fff' }}
+          >
+            Back up now
+          </button>
+        </div>
+      )}
 
       <div className="h-px mx-6 shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
 
@@ -346,6 +398,58 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {/* Settings sheet */}
+      {showSettings && (
+        <div
+          className="fixed inset-0 z-50 flex items-end"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setShowSettings(false)}
+        >
+          <div
+            className="w-full rounded-t-3xl px-6 pt-5"
+            style={{ backgroundColor: '#13131a', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} />
+            <p className="text-white/40 text-xs font-semibold tracking-widest uppercase mb-4">Backup reminder</p>
+            <div className="flex flex-col gap-1 mb-6">
+              {([
+                { label: 'Every week', days: 7 },
+                { label: 'Every month', days: 30 },
+                { label: 'Every 3 months', days: 90 },
+                { label: 'Never', days: 0 },
+              ] as const).map(({ label, days }) => (
+                <button
+                  key={days}
+                  onClick={() => setReminderDays(days)}
+                  className="flex items-center justify-between py-3.5 px-4 rounded-2xl transition-all"
+                  style={{ backgroundColor: reminderDays === days ? 'rgba(240,64,122,0.12)' : 'rgba(255,255,255,0.04)' }}
+                >
+                  <span className="text-white text-sm font-medium">{label}</span>
+                  {reminderDays === days && (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f0407a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </div>
+            {lastBackupAt > 0 && (
+              <p className="text-white/25 text-xs text-center mb-4">
+                Last backup: {new Date(lastBackupAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+            )}
+            <button
+              onClick={() => setShowSettings(false)}
+              className="w-full py-3 text-sm transition-colors"
+              style={{ color: 'rgba(255,255,255,0.35)' }}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Type picker sheet */}
       {showPicker && (
