@@ -39,11 +39,15 @@ export function generateId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
-// Returns '#111111' for light accents (needs dark text) and '#ffffff' for dark accents.
+// Returns '#111111' or '#ffffff' — whichever gives ≥ 4.5:1 WCAG contrast.
+// Uses proper relative luminance (IEC 61966-2-1) so vibrant accents get dark text.
 export function accentText(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000
-  return brightness > 160 ? '#111111' : '#ffffff'
+  const toLinear = (c: number) =>
+    c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  const r = toLinear(parseInt(hex.slice(1, 3), 16) / 255)
+  const g = toLinear(parseInt(hex.slice(3, 5), 16) / 255)
+  const b = toLinear(parseInt(hex.slice(5, 7), 16) / 255)
+  const L = 0.2126 * r + 0.7152 * g + 0.0722 * b
+  // L > 0.18 → dark text gives ≥ 4.5:1; otherwise white text gives ≥ 4.5:1
+  return L > 0.18 ? '#111111' : '#ffffff'
 }
