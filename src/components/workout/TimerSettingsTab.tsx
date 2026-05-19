@@ -28,7 +28,7 @@ export function TimerSettingsTab({ workout, onChange }: Props) {
   )
   const [warmCoolOpen, setWarmCoolOpen] = useState((workout.cooldown || 0) > 0)
 
-  const ACCENT_COLORS = ['#f0407a', '#4e8fff', '#ff6b2b', '#00d9a0', '#a87dff', '#dc2626']
+  const ACCENT_COLORS = ['#f0407a', '#4e8fff', '#ff6b2b', '#84cc16', '#a87dff']
   const activeAccent = workout.accentColor ?? '#f0407a'
 
   return (
