@@ -44,27 +44,23 @@ function newWorkout(type: WorkoutType): Workout {
 
 export default function HomePage() {
   const router = useRouter()
-  const { workouts, sessions, addWorkout, clearHistory, moveWorkout, reminderDays, lastBackupAt, setReminderDays, setLastBackupAt } = useWorkoutStore()
+  const { workouts, sessions, addWorkout, clearHistory, moveWorkout, reminderDays, lastBackupAt, reminderSnoozedAt, setReminderDays, setLastBackupAt, setReminderSnoozedAt } = useWorkoutStore()
   const [showPicker, setShowPicker] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
-  const [reminderDismissed, setReminderDismissed] = useState(false)
   const importInputRef = useRef<HTMLInputElement>(null)
 
-  // Use oldest workout createdAt as proxy for "installed at"
-  const baseBackupTime = useMemo(() => {
-    if (lastBackupAt > 0) return lastBackupAt
-    if (workouts.length === 0) return Date.now()
-    return Math.min(...workouts.map((w) => w.createdAt))
-  }, [lastBackupAt, workouts])
-
-  const reminderDue = !reminderDismissed
-    && reminderDays > 0
+  // Reminder is due when more than reminderDays have passed since the last
+  // real backup OR the last snooze (✕ dismiss), whichever is more recent.
+  const baseTime = Math.max(lastBackupAt, reminderSnoozedAt)
+  const reminderDue = reminderDays > 0
     && workouts.length > 0
-    && Date.now() - baseBackupTime > reminderDays * 86_400_000
+    && (baseTime === 0
+      ? Math.min(...workouts.map((w) => w.createdAt)) < Date.now() - reminderDays * 86_400_000
+      : Date.now() - baseTime > reminderDays * 86_400_000)
   const rowEls = useRef<Map<string, HTMLElement>>(new Map())
 
   const filtered = useMemo(() => {
@@ -159,7 +155,7 @@ export default function HomePage() {
           <div className="flex items-center gap-1">
             {/* Export */}
             <button
-              onClick={() => { exportWorkouts(workouts); setLastBackupAt(Date.now()); setReminderDismissed(false) }}
+              onClick={() => { exportWorkouts(workouts); setLastBackupAt(Date.now()) }}
               className="w-9 h-9 flex items-center justify-center rounded-xl transition-all active:scale-95 text-white/35 hover:text-white/60"
               aria-label="Export workouts"
               title="Export workouts"
@@ -242,7 +238,7 @@ export default function HomePage() {
         <div className="mx-6 mb-3 rounded-2xl px-4 py-3" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <div className="flex items-start justify-between gap-2 mb-2">
             <p className="text-white/80 text-sm font-medium leading-snug">Time to back up your workouts</p>
-            <button onClick={() => setReminderDismissed(true)} className="text-white/25 hover:text-white/50 shrink-0 mt-0.5">
+            <button onClick={() => setReminderSnoozedAt(Date.now())} className="text-white/25 hover:text-white/50 shrink-0 mt-0.5">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
@@ -254,7 +250,7 @@ export default function HomePage() {
               : 'You haven\'t backed up yet'}
           </p>
           <button
-            onClick={() => { exportWorkouts(workouts); setLastBackupAt(Date.now()); setReminderDismissed(true) }}
+            onClick={() => { exportWorkouts(workouts); setLastBackupAt(Date.now()) }}
             className="w-full py-2 rounded-xl text-sm font-semibold transition-all active:scale-95"
             style={{ backgroundColor: '#f0407a', color: '#fff' }}
           >
