@@ -59,7 +59,7 @@ export function WorkoutCard({ workout, onSelect, selected, onDragHandlePointerDo
           <div className="flex items-center gap-1.5 min-w-0">
             <p className="text-white font-medium text-base truncate leading-snug">{workout.name}</p>
             {workout.pinned && (
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="#ffcb38" stroke="none" className="shrink-0 mb-0.5">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="#fbbf24" stroke="none" className="shrink-0 mb-0.5">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
               </svg>
             )}

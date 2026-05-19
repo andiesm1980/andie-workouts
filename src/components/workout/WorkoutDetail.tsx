@@ -6,7 +6,7 @@ import type { Workout } from '@/types/workout'
 import { useWorkoutStore } from '@/store/workoutStore'
 import { TimerSettingsTab } from './TimerSettingsTab'
 import { ExercisesTab } from './ExercisesTab'
-import { computeTotalTime, formatDuration, generateId } from '@/lib/workoutUtils'
+import { computeTotalTime, formatDuration, generateId, accentText } from '@/lib/workoutUtils'
 import { shareUrl } from '@/lib/shareWorkout'
 
 type Tab = 'timer' | 'exercises'
@@ -124,7 +124,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
             <button
               onClick={() => togglePin(workout.id)}
               className="p-2 transition-colors"
-              style={{ color: workout.pinned ? '#ffcb38' : 'rgba(255,255,255,0.35)' }}
+              style={{ color: workout.pinned ? '#fbbf24' : 'rgba(255,255,255,0.35)' }}
               aria-label={workout.pinned ? 'Unpin workout' : 'Pin workout'}
             >
               <svg width="17" height="17" viewBox="0 0 24 24" fill={workout.pinned ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -196,7 +196,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
               className="flex-1 py-1.5 rounded-lg text-xs font-semibold tracking-widest uppercase transition-all"
               style={{
                 backgroundColor: workout.type === t ? (workout.accentColor ?? '#f0407a') : 'transparent',
-                color: workout.type === t ? '#fff' : 'rgba(255,255,255,0.35)',
+                color: workout.type === t ? accentText(workout.accentColor ?? '#f0407a') : 'rgba(255,255,255,0.35)',
               }}
             >
               {t === 'hiit' ? 'HIIT' : 'Circuit'}
@@ -255,7 +255,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
         <button
           onClick={() => router.push(`/timer/${workout.id}`)}
           className="w-full py-4 rounded-2xl font-semibold text-base transition-all active:scale-98"
-          style={{ backgroundColor: workout.accentColor ?? '#f0407a', color: '#ffffff' }}
+          style={{ backgroundColor: workout.accentColor ?? '#f0407a', color: accentText(workout.accentColor ?? '#f0407a') }}
         >
           Start - Total time {formatDuration(totalTime)}
         </button>

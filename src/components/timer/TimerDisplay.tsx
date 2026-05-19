@@ -43,7 +43,7 @@ export function TimerDisplay({ workout }: Props) {
     rest:     { color: '#00d9a0', label: 'Rest' },
     break:    { color: '#4e8fff', label: 'Break' },
     cooldown: { color: '#a87dff', label: 'Cool Down' },
-    complete: { color: '#ffcb38', label: 'Done' },
+    complete: { color: '#fbbf24', label: 'Done' },
   }
 
   useEffect(() => { setSoundEnabled(soundEnabled) }, [soundEnabled])
@@ -136,7 +136,7 @@ export function TimerDisplay({ workout }: Props) {
     <div className="relative flex items-center justify-center">
       <svg viewBox="0 0 200 200" className="w-[52vw] max-w-[210px] @[600px]:w-[min(36vh,240px)] @[600px]:max-w-none">
         <circle cx="100" cy="100" r={RADIUS} fill="none" stroke="rgba(250,204,21,0.15)" strokeWidth="10" />
-        <circle cx="100" cy="100" r={RADIUS} fill="none" stroke="#ffcb38" strokeWidth="10" strokeLinecap="round"
+        <circle cx="100" cy="100" r={RADIUS} fill="none" stroke="#fbbf24" strokeWidth="10" strokeLinecap="round"
           strokeDasharray={CIRCUMFERENCE} strokeDashoffset={0} transform="rotate(-90 100 100)" />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
@@ -271,7 +271,7 @@ export function TimerDisplay({ workout }: Props) {
                 </button>
                 <button onClick={() => router.push('/')}
                   className="flex-1 py-4 rounded-2xl font-semibold text-sm transition-colors"
-                  style={{ backgroundColor: '#ffcb38', color: '#0a0a14' }}>
+                  style={{ backgroundColor: '#fbbf24', color: '#0a0a14' }}>
                   Done
                 </button>
               </div>
