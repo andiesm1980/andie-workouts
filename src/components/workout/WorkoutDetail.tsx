@@ -23,9 +23,11 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
   const [workout, setWorkout] = useState<Workout>(initial)
   const [activeTab, setActiveTab] = useState<Tab>('timer')
   const [editingName, setEditingName] = useState(false)
+  const [editName, setEditName] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
+  const cancelEditRef = useRef(false)
 
   const goBack = () => onClose ? onClose() : router.push('/')
 
@@ -98,20 +100,26 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
               <input
                 ref={nameRef}
                 className="w-full bg-transparent text-white font-semibold text-base focus:outline-none border-b border-white/30 pb-0.5"
-                defaultValue={workout.name}
-                onBlur={(e) => {
-                  update({ name: e.target.value.trim() || workout.name })
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onBlur={() => {
+                  if (cancelEditRef.current) { cancelEditRef.current = false; return }
+                  const trimmed = editName.trim()
+                  update({ name: trimmed || workout.name })
                   setEditingName(false)
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') nameRef.current?.blur()
-                  if (e.key === 'Escape') setEditingName(false)
+                  if (e.key === 'Escape') {
+                    cancelEditRef.current = true
+                    setEditingName(false)
+                  }
                 }}
                 autoFocus
               />
             ) : (
               <button
-                onClick={() => setEditingName(true)}
+                onClick={() => { setEditName(workout.name); setEditingName(true) }}
                 className="text-white font-semibold text-base truncate w-full text-left hover:text-white/80 transition-colors"
               >
                 {workout.name}
