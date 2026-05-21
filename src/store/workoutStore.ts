@@ -77,6 +77,7 @@ interface WorkoutStore {
   deleteWorkout: (id: string) => void
   recordSession: (session: Omit<CompletedSession, 'id'>) => void
   clearHistory: () => void
+  setSessions: (sessions: CompletedSession[]) => void
   setSoundEnabled: (v: boolean) => void
   togglePin: (id: string) => void
   moveWorkout: (newOrder: Workout[]) => void
@@ -112,6 +113,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
           sessions: [{ ...session, id: crypto.randomUUID() }, ...state.sessions].slice(0, 100),
         })),
       clearHistory: () => set({ sessions: [] }),
+      setSessions: (sessions) => set({ sessions }),
       setSoundEnabled: (v) => set({ soundEnabled: v }),
       togglePin: (id) =>
         set((state) => {

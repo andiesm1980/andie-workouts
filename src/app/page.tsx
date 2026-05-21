@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef, useCallback } from 'react'
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWorkoutStore } from '@/store/workoutStore'
 import { WorkoutCard } from '@/components/workout/WorkoutCard'
@@ -8,6 +8,7 @@ import { WorkoutDetail } from '@/components/workout/WorkoutDetail'
 import { generateId } from '@/lib/workoutUtils'
 import { exportWorkouts, parseImportFile } from '@/lib/exportImport'
 import { useDrag } from '@/hooks/useDrag'
+import { useDrive } from '@/context/DriveContext'
 import type { Workout, WorkoutType } from '@/types/workout'
 
 function relativeDate(ts: number): string {
@@ -44,7 +45,25 @@ function newWorkout(type: WorkoutType): Workout {
 
 export default function HomePage() {
   const router = useRouter()
-  const { workouts, sessions, addWorkout, clearHistory, moveWorkout, reminderDays, lastBackupAt, reminderSnoozedAt, setReminderDays, setLastBackupAt, setReminderSnoozedAt } = useWorkoutStore()
+  const { workouts, sessions, addWorkout, clearHistory, moveWorkout, setSessions, reminderDays, lastBackupAt, reminderSnoozedAt, setReminderDays, setLastBackupAt, setReminderSnoozedAt } = useWorkoutStore()
+  const drive = useDrive()
+
+  // Auto-save to GitHub whenever workouts or sessions change
+  useEffect(() => {
+    drive.scheduleSave({ workouts, sessions })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workouts, sessions])
+
+  // Load from GitHub when first connected
+  useEffect(() => {
+    if (!drive.isConnected) return
+    drive.loadNow().then((data) => {
+      if (!data) return
+      moveWorkout(data.workouts)
+      setSessions(data.sessions)
+    }).catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drive.isConnected])
   const [showPicker, setShowPicker] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -408,6 +427,70 @@ export default function HomePage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} />
+
+            {/* GitHub sync */}
+            <p className="text-white/40 text-xs font-semibold tracking-widest uppercase mb-3">GitHub sync</p>
+            {drive.isConnected ? (
+              <div className="rounded-2xl p-4 mb-6" style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}>
+                <div className="flex items-start justify-between gap-3 mb-1">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: drive.status === 'error' ? '#f0407a' : drive.status === 'syncing' ? '#fbbf24' : '#48B256' }} />
+                      <span className="text-white/80 text-sm font-medium">
+                        {drive.status === 'syncing' ? 'Syncing…' : drive.status === 'error' ? 'Sync error' : 'Connected'}
+                      </span>
+                    </div>
+                    <p className="text-white/35 text-xs">{drive.repo}</p>
+                    {drive.lastSynced && (
+                      <p className="text-white/25 text-xs mt-0.5">
+                        Last synced {drive.lastSynced.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={drive.disconnect}
+                    className="text-xs text-white/30 hover:text-white/60 transition-colors shrink-0 mt-0.5"
+                  >
+                    Disconnect
+                  </button>
+                </div>
+                {drive.error && <p className="text-xs mt-2" style={{ color: '#f0407a' }}>{drive.error}</p>}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 mb-6">
+                <input
+                  value={drive.repo}
+                  onChange={(e) => drive.setRepo(e.target.value)}
+                  placeholder="owner/repo"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className="w-full px-4 py-3 rounded-2xl text-sm text-white placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-white/20"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                />
+                <input
+                  value={drive.token}
+                  onChange={(e) => drive.setToken(e.target.value)}
+                  placeholder="Personal access token (contents: write)"
+                  type="password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className="w-full px-4 py-3 rounded-2xl text-sm text-white placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-white/20"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                />
+                {drive.error && <p className="text-xs px-1" style={{ color: '#f0407a' }}>{drive.error}</p>}
+                <button
+                  onClick={drive.connect}
+                  disabled={drive.status === 'connecting'}
+                  className="w-full py-3 rounded-2xl text-sm font-semibold transition-all active:scale-95 disabled:opacity-50"
+                  style={{ backgroundColor: '#f0407a', color: '#fff' }}
+                >
+                  {drive.status === 'connecting' ? 'Connecting…' : 'Connect'}
+                </button>
+              </div>
+            )}
+
             <p className="text-white/40 text-xs font-semibold tracking-widest uppercase mb-4">Backup reminder</p>
             <div className="flex flex-col gap-1 mb-6">
               {([
