@@ -70,8 +70,7 @@ export function TimerDisplay({ workout }: Props) {
   const toggleSound = () => storeSoundEnabled(!soundEnabled)
   const handleSkipNext = () => {
     haptic('tap')
-    if (workout.type === 'circuit') timer.skipToNextExercise()
-    else timer.skipToNext()
+    timer.skipToNext()
   }
   const handleSkipPrev = () => { haptic('tap'); timer.skipToPrev() }
   const handleQuit = () => { timer.reset(); router.push('/') }

@@ -168,19 +168,6 @@ export function useTimer(workout: Workout) {
     }
   }, [])
 
-  const skipToNextExercise = useCallback(() => {
-    const { segmentIndex } = stateRef.current
-    const segs = segmentsRef.current
-    const nextWork = segs.findIndex((s, i) => i > segmentIndex && s.phase === 'work')
-    if (nextWork === -1) {
-      setState((s) => ({ ...s, isRunning: false, isComplete: true, timeRemaining: 0 }))
-      playComplete()
-    } else {
-      playPhaseStart()
-      setState((s) => ({ ...s, segmentIndex: nextWork, timeRemaining: segs[nextWork].duration }))
-    }
-  }, [])
-
   const currentSegment = segments[state.segmentIndex]
   const totalDuration = currentSegment?.duration ?? 1
   const progress = 1 - state.timeRemaining / totalDuration
@@ -206,6 +193,5 @@ export function useTimer(workout: Workout) {
     reset,
     skipToPrev,
     skipToNext,
-    skipToNextExercise,
   }
 }
