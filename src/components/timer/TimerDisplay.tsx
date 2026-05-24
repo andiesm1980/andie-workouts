@@ -220,7 +220,7 @@ export function TimerDisplay({ workout }: Props) {
               <>
                 <p className="text-xs font-semibold tracking-widest uppercase mb-2 transition-colors duration-500" style={{ color }}>{label}</p>
                 {timer.phase === 'work' && workout.type === 'circuit' ? (
-                  <p className="text-white text-xl font-semibold leading-snug">{timer.exerciseName}</p>
+                  <p className="text-white text-3xl font-semibold leading-snug">{timer.exerciseName}</p>
                 ) : timer.phase === 'work' ? (
                   <p className="text-white/40 text-base font-light">Interval</p>
                 ) : timer.phase === 'rest' ? (
