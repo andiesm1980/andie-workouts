@@ -53,17 +53,6 @@ export default function HomePage() {
     drive.scheduleSave({ workouts, sessions })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workouts, sessions])
-
-  // Load from GitHub when first connected
-  useEffect(() => {
-    if (!drive.isConnected) return
-    drive.loadNow().then((data) => {
-      if (!data) return
-      moveWorkout(data.workouts)
-      setSessions(data.sessions)
-    }).catch(() => {})
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drive.isConnected])
   const [showPicker, setShowPicker] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -447,12 +436,27 @@ export default function HomePage() {
                       </p>
                     )}
                   </div>
-                  <button
-                    onClick={drive.disconnect}
-                    className="text-xs text-white/30 hover:text-white/60 transition-colors shrink-0 mt-0.5"
-                  >
-                    Disconnect
-                  </button>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <button
+                      onClick={() => {
+                        drive.loadNow().then((data) => {
+                          if (!data) return
+                          moveWorkout(data.workouts)
+                          setSessions(data.sessions)
+                        }).catch(() => {})
+                      }}
+                      disabled={drive.status === 'syncing'}
+                      className="text-xs text-white/40 hover:text-white/70 transition-colors disabled:opacity-40"
+                    >
+                      Restore from GitHub
+                    </button>
+                    <button
+                      onClick={drive.disconnect}
+                      className="text-xs text-white/25 hover:text-white/50 transition-colors"
+                    >
+                      Disconnect
+                    </button>
+                  </div>
                 </div>
                 {drive.error && <p className="text-xs mt-2" style={{ color: '#f0407a' }}>{drive.error}</p>}
               </div>
