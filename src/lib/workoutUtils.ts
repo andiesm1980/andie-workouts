@@ -12,10 +12,21 @@ export function computeTotalTime(workout: Workout): number {
   } else {
     const groups = workout.exerciseGroups ?? []
     groups.forEach((group, gIdx) => {
-      const exCount = Math.max(1, (group.exercises ?? []).length)
-      const perSet = exCount * workout.workTime + (exCount - 1) * workout.restTime
+      const exercises = group.exercises ?? []
+      const restTime = workout.restTime
+      // Per set: each exercise has work time, plus rest after each except the last exercise of the last set.
+      // Non-last sets: exCount rests (including after last exercise). Last set: (exCount - 1) rests.
+      const restPerNonLastSet = exercises.reduce((sum, ex) => {
+        const restDur = ex.restTime ?? restTime
+        return restDur > 0 ? sum + restDur : sum
+      }, 0)
+      const restPerLastSet = exercises.slice(0, -1).reduce((sum, ex) => {
+        const restDur = ex.restTime ?? restTime
+        return restDur > 0 ? sum + restDur : sum
+      }, 0)
+      const workPerSet = exercises.reduce((sum, ex) => sum + (ex.workTime ?? workout.workTime), 0)
       const setBreakDur = group.setBreak !== undefined ? group.setBreak : cycleBreak
-      total += rounds * perSet + (rounds - 1) * setBreakDur
+      total += (rounds - 1) * (workPerSet + restPerNonLastSet + setBreakDur) + (workPerSet + restPerLastSet)
       if (gIdx < groups.length - 1) {
         total += group.restAfter !== undefined ? group.restAfter : cycleBreak
       }

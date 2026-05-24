@@ -259,7 +259,7 @@ export function ExercisesTab({ workout, onChange }: Props) {
                       {hasCustomWork ? `${ex.workTime}s` : `${workout.workTime}s`}
                     </button>
 
-                    {!isLastEx && (
+                    {(!isLastEx || workout.rounds > 1) && (
                       <button
                         onClick={() => openExtra('rest')}
                         className="shrink-0 px-2 py-1 rounded-lg text-xs tabular-nums transition-colors"

@@ -55,7 +55,9 @@ export function buildSegments(workout: Workout): Segment[] {
           // rest between exercises, AND after the last exercise before the next set starts
           if (!isLastEx || !isLastSet) {
             const restDur = ex.restTime ?? workout.restTime
-            segments.push({ phase: 'rest', duration: restDur, label: 'Rest', round: set, exerciseIndex: exIdx, groupIndex: gIdx })
+            if (restDur > 0) {
+              segments.push({ phase: 'rest', duration: restDur, label: 'Rest', round: set, exerciseIndex: exIdx, groupIndex: gIdx })
+            }
           }
         }
         const setBreakDur = group.setBreak !== undefined ? group.setBreak : cycleBreak
