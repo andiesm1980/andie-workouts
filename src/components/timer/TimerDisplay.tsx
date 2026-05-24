@@ -110,7 +110,7 @@ export function TimerDisplay({ workout }: Props) {
       onClick={isSkippable ? handleSkipNext : undefined}
       style={{ cursor: isSkippable ? 'pointer' : 'default' }}
     >
-      <svg viewBox="0 0 200 200" className="w-[65vw] max-w-[265px] @[600px]:w-[min(46vh,300px)] @[600px]:max-w-none">
+      <svg viewBox="0 0 200 200" className="w-[82vw] max-w-[340px] @[600px]:w-[min(52vh,360px)] @[600px]:max-w-none">
         <circle cx="100" cy="100" r={OUTER_RADIUS} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="2.5" />
         <circle cx="100" cy="100" r={OUTER_RADIUS} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="2.5"
           strokeLinecap="round" strokeDasharray={OUTER_CIRCUMFERENCE} strokeDashoffset={outerDashOffset}
@@ -277,13 +277,6 @@ export function TimerDisplay({ workout }: Props) {
               </div>
             ) : (
               <>
-                {workout.type === 'circuit' && (
-                  <button onClick={handleSkipNext}
-                    className="w-full py-3 rounded-2xl text-sm font-medium mb-5 transition-all active:scale-98"
-                    style={{ backgroundColor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.55)' }}>
-                    Next exercise →
-                  </button>
-                )}
                 <div className="flex items-center justify-center gap-12 mb-5">
                   <button onClick={handleSkipPrev} className="transition-all active:scale-90" style={{ color: 'rgba(255,255,255,0.35)' }}>
                     <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" /></svg>
