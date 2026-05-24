@@ -67,10 +67,12 @@ export function TimerSettingsTab({ workout, onChange }: Props) {
           min={0} max={3600} step={5} format="time" />
       </Row>
 
-      <Row label="Intervals">
-        <StepInput value={workout.intervals || 1} onChange={(v) => onChange({ intervals: v })}
-          min={1} max={20} step={1} format="count" />
-      </Row>
+      {workout.type === 'hiit' && (
+        <Row label="Intervals">
+          <StepInput value={workout.intervals || 1} onChange={(v) => onChange({ intervals: v })}
+            min={1} max={20} step={1} format="count" />
+        </Row>
+      )}
 
       <Row label="Get ready">
         <StepInput value={workout.warmup} onChange={(v) => onChange({ warmup: v })}
