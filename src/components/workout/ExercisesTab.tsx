@@ -346,7 +346,9 @@ export function ExercisesTab({ workout, onChange }: Props) {
 
                 const label = field === 'setBreak' ? 'Rest between sets' : 'Rest after superset'
                 const value = group[field]
-                const defaultVal = workout.cycleBreak
+                const defaultVal = field === 'restAfter'
+                  ? (workout.supersetBreak !== undefined ? workout.supersetBreak : workout.cycleBreak)
+                  : workout.cycleBreak
                 const isEditing = editingGroupField?.id === group.id && editingGroupField.field === field
 
                 return (

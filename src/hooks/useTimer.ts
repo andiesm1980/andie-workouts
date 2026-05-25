@@ -71,7 +71,8 @@ export function buildSegments(workout: Workout): Segment[] {
       }
 
       if (!isLastGroup) {
-        const groupBreak = group.restAfter !== undefined ? group.restAfter : cycleBreak
+        const defaultSupersetBreak = workout.supersetBreak !== undefined ? workout.supersetBreak : cycleBreak
+        const groupBreak = group.restAfter !== undefined ? group.restAfter : defaultSupersetBreak
         if (groupBreak > 0) {
           segments.push({ phase: 'break', duration: groupBreak, label: 'Superset Rest', round: rounds, exerciseIndex: 0, groupIndex: gIdx })
         }

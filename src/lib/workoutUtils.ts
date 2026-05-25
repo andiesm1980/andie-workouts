@@ -30,7 +30,8 @@ export function computeTotalTime(workout: Workout): number {
       const interSetGap = setBreakDur > 0 ? setBreakDur : lastExRest
       total += rounds * (workPerSet + innerRests) + (rounds - 1) * interSetGap
       if (gIdx < groups.length - 1) {
-        total += group.restAfter !== undefined ? group.restAfter : cycleBreak
+        const defaultSupersetBreak = workout.supersetBreak !== undefined ? workout.supersetBreak : cycleBreak
+        total += group.restAfter !== undefined ? group.restAfter : defaultSupersetBreak
       }
     })
   }
