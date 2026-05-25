@@ -25,10 +25,12 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
   const [editingName, setEditingName] = useState(false)
   const [editName, setEditName] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
   const cancelEditRef = useRef(false)
 
+  const accent = workout.accentColor ?? '#f0407a'
   const goBack = () => onClose ? onClose() : router.push('/')
 
   const update = useCallback(
@@ -42,8 +44,6 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
 
   const totalTime = computeTotalTime(workout)
 
-  const handleDelete = () => setShowDeleteConfirm(true)
-
   const confirmDelete = () => {
     deleteWorkout(workout.id)
     goBack()
@@ -52,11 +52,13 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
   const handleDuplicate = () => {
     const copy = { ...workout, id: generateId(), name: `${workout.name} (copy)`, createdAt: Date.now() }
     addWorkout(copy)
+    setShowMenu(false)
     if (onDuplicate) onDuplicate(copy.id)
     else router.push(`/workout/${copy.id}`)
   }
 
   const handleShare = async () => {
+    setShowMenu(false)
     const url = shareUrl(workout)
     if (navigator.share) {
       await navigator.share({ title: workout.name, text: `Check out my workout: ${workout.name}`, url }).catch(() => {})
@@ -65,6 +67,12 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
       setShareCopied(true)
       setTimeout(() => setShareCopied(false), 2000)
     }
+  }
+
+  const handlePin = () => {
+    togglePin(workout.id)
+    setWorkout((w) => ({ ...w, pinned: !w.pinned }))
+    setShowMenu(false)
   }
 
   const tabs: Tab[] = workout.type === 'circuit' ? ['timer', 'exercises'] : ['timer']
@@ -76,11 +84,11 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
         className="shrink-0 px-5"
         style={{ paddingTop: onClose ? 20 : 'max(env(safe-area-inset-top), 20px)' }}
       >
-        <div className="flex items-center gap-3 mb-5">
+        <div className="flex items-center gap-3 mb-4">
           {/* Back / Close */}
           <button
             onClick={goBack}
-            className="text-white/40 hover:text-white/70 transition-colors p-1 -ml-1"
+            className="shrink-0 text-white/40 hover:text-white/70 transition-colors p-1 -ml-1"
             aria-label={onClose ? 'Close' : 'Back'}
           >
             {onClose ? (
@@ -99,7 +107,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
             {editingName ? (
               <input
                 ref={nameRef}
-                className="w-full bg-transparent text-white font-semibold text-base focus:outline-none border-b border-white/30 pb-0.5"
+                className="w-full bg-transparent text-white font-bold text-lg focus:outline-none border-b border-white/30 pb-0.5"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 onBlur={() => {
@@ -120,76 +128,28 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
             ) : (
               <button
                 onClick={() => { setEditName(workout.name); setEditingName(true) }}
-                className="text-white font-semibold text-base truncate w-full text-left hover:text-white/80 transition-colors"
+                className="text-white font-bold text-lg truncate w-full text-left hover:text-white/80 transition-colors"
               >
                 {workout.name}
               </button>
             )}
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={() => togglePin(workout.id)}
-              className="p-2 transition-colors"
-              style={{ color: workout.pinned ? '#fbbf24' : 'rgba(255,255,255,0.35)' }}
-              aria-label={workout.pinned ? 'Unpin workout' : 'Pin workout'}
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill={workout.pinned ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-              </svg>
-            </button>
-            <button
-              onClick={handleDuplicate}
-              className="p-2 text-white/35 hover:text-white/60 transition-colors"
-              aria-label="Duplicate workout"
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-              </svg>
-            </button>
-            <button
-              onClick={handleShare}
-              className="p-2 transition-colors"
-              style={{ color: shareCopied ? '#00d9a0' : 'rgba(255,255,255,0.35)' }}
-              aria-label="Share workout"
-            >
-              {shareCopied ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                </svg>
-              )}
-            </button>
-            {!onClose && (
-              <button
-                onClick={goBack}
-                className="p-2 text-white/40 hover:text-white/70 transition-colors"
-                aria-label="Save and go back"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              </button>
-            )}
-            <button
-              onClick={handleDelete}
-              className="p-2 text-white/25 hover:text-red-400/60 transition-colors"
-              aria-label="Delete workout"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                <path d="M10 11v6M14 11v6" />
-                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-              </svg>
-            </button>
-          </div>
+          {/* Share copied toast */}
+          {shareCopied && (
+            <span className="text-xs shrink-0 transition-opacity" style={{ color: '#00d9a0' }}>Copied!</span>
+          )}
+
+          {/* ⋯ menu */}
+          <button
+            onClick={() => setShowMenu(true)}
+            className="shrink-0 p-2 -mr-1 text-white/40 hover:text-white/70 transition-colors"
+            aria-label="More options"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" />
+            </svg>
+          </button>
         </div>
 
         {/* Type toggle */}
@@ -203,8 +163,8 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
               }}
               className="flex-1 py-1.5 rounded-lg text-xs font-semibold tracking-widest uppercase transition-all"
               style={{
-                backgroundColor: workout.type === t ? (workout.accentColor ?? '#f0407a') : 'transparent',
-                color: workout.type === t ? accentText(workout.accentColor ?? '#f0407a') : 'rgba(255,255,255,0.35)',
+                backgroundColor: workout.type === t ? accent : 'transparent',
+                color: workout.type === t ? accentText(accent) : 'rgba(255,255,255,0.35)',
               }}
             >
               {t === 'hiit' ? 'HIIT' : 'Circuit'}
@@ -219,23 +179,18 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
               key={tab}
               onClick={() => setActiveTab(tab)}
               className="py-3 px-1 mr-7 text-xs font-semibold tracking-widest uppercase transition-colors relative"
-              style={{
-                color: activeTab === tab ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.3)',
-              }}
+              style={{ color: activeTab === tab ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.3)' }}
             >
               {tab === 'timer' ? 'Timer' : 'Exercises'}
               {activeTab === tab && (
-                <span
-                  className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
-                  style={{ backgroundColor: '#f0407a' }}
-                />
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ backgroundColor: accent }} />
               )}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Tab content - scrollable */}
+      {/* Tab content */}
       <div className="flex-1 overflow-y-auto">
         {activeTab === 'timer' ? (
           <TimerSettingsTab workout={workout} onChange={update} />
@@ -254,7 +209,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
           className="w-full bg-transparent text-white/50 text-sm resize-none focus:outline-none placeholder-white/20 leading-relaxed focus:text-white/70 transition-colors"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
           onFocus={(e) => { (e.target as HTMLTextAreaElement).rows = 4 }}
-          onBlur={(e) => { (e.target as HTMLTextAreaElement).rows = workout.notes ? 2 : 2 }}
+          onBlur={(e) => { (e.target as HTMLTextAreaElement).rows = 2 }}
         />
       </div>
 
@@ -263,11 +218,95 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
         <button
           onClick={() => router.push(`/timer/${workout.id}`)}
           className="w-full py-4 rounded-2xl font-semibold text-base transition-all active:scale-98"
-          style={{ backgroundColor: workout.accentColor ?? '#f0407a', color: accentText(workout.accentColor ?? '#f0407a') }}
+          style={{ backgroundColor: accent, color: accentText(accent) }}
         >
-          Start - Total time {formatDuration(totalTime)}
+          Start — {formatDuration(totalTime)}
         </button>
       </div>
+
+      {/* ⋯ menu sheet */}
+      {showMenu && (
+        <div
+          className="fixed inset-0 z-50 flex items-end"
+          style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
+          onClick={() => setShowMenu(false)}
+        >
+          <div
+            className="w-full rounded-t-3xl px-4 pt-4"
+            style={{ backgroundColor: '#13131a', paddingBottom: 'max(env(safe-area-inset-bottom), 20px)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} />
+
+            {/* Pin */}
+            <button
+              onClick={handlePin}
+              className="flex items-center gap-4 w-full px-2 py-3.5 rounded-2xl transition-colors active:bg-white/5"
+            >
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: workout.pinned ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.07)' }}>
+                <svg width="17" height="17" viewBox="0 0 24 24"
+                  fill={workout.pinned ? '#fbbf24' : 'none'} stroke={workout.pinned ? '#fbbf24' : 'rgba(255,255,255,0.6)'}
+                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                </svg>
+              </div>
+              <span className="text-base" style={{ color: workout.pinned ? '#fbbf24' : 'rgba(255,255,255,0.8)' }}>
+                {workout.pinned ? 'Unpin workout' : 'Pin workout'}
+              </span>
+            </button>
+
+            {/* Duplicate */}
+            <button
+              onClick={handleDuplicate}
+              className="flex items-center gap-4 w-full px-2 py-3.5 rounded-2xl transition-colors active:bg-white/5"
+            >
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: 'rgba(255,255,255,0.07)' }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+              </div>
+              <span className="text-base" style={{ color: 'rgba(255,255,255,0.8)' }}>Duplicate</span>
+            </button>
+
+            {/* Share */}
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-4 w-full px-2 py-3.5 rounded-2xl transition-colors active:bg-white/5"
+            >
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: 'rgba(255,255,255,0.07)' }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </svg>
+              </div>
+              <span className="text-base" style={{ color: 'rgba(255,255,255,0.8)' }}>Share</span>
+            </button>
+
+            <div className="my-2 mx-2" style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+
+            {/* Delete */}
+            <button
+              onClick={() => { setShowMenu(false); setShowDeleteConfirm(true) }}
+              className="flex items-center gap-4 w-full px-2 py-3.5 rounded-2xl transition-colors active:bg-white/5"
+            >
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: 'rgba(239,68,68,0.12)' }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                  <path d="M10 11v6M14 11v6" />
+                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                </svg>
+              </div>
+              <span className="text-base" style={{ color: '#f87171' }}>Delete workout</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Delete confirm sheet */}
       {showDeleteConfirm && (
