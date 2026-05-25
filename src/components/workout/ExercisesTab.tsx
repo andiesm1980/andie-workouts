@@ -253,19 +253,6 @@ export function ExercisesTab({ workout, onChange }: Props) {
                       {hasCustomWork ? `${ex.workTime}s` : `${workout.workTime}s`}
                     </button>
 
-                    {(!isLastEx || workout.rounds > 1) && (
-                      <button
-                        onClick={() => openExtra('rest')}
-                        className="shrink-0 px-2 py-1 rounded-lg text-xs tabular-nums transition-colors"
-                        style={{
-                          backgroundColor: hasCustomRest ? 'rgba(0,217,160,0.12)' : 'rgba(255,255,255,0.05)',
-                          color: hasCustomRest ? '#00d9a0' : 'rgba(255,255,255,0.25)',
-                        }}
-                      >
-                        {hasCustomRest ? `${ex.restTime}s` : `${workout.restTime}s`}
-                      </button>
-                    )}
-
                     <button
                       onClick={() => removeExercise(group.id, ex.id)}
                       className="text-white/15 hover:text-red-400/60 transition-colors p-1 shrink-0"
@@ -277,22 +264,18 @@ export function ExercisesTab({ workout, onChange }: Props) {
                     </button>
                   </div>
 
-                  {(isEditingWork || isEditingRest) && (
+                  {isEditingWork && (
                     <div className="flex items-center gap-3 pb-3 pl-10">
-                      <span className="text-white/30 text-xs">{isEditingWork ? 'Work time:' : 'Rest after:'}</span>
+                      <span className="text-white/30 text-xs">Work time:</span>
                       <input
                         ref={extraInputRef}
                         type="number"
-                        min={isEditingWork ? 5 : 0}
-                        max={isEditingWork ? 3600 : 300}
-                        step={5}
-                        defaultValue={isEditingWork ? (ex.workTime ?? workout.workTime) : (ex.restTime ?? workout.restTime)}
+                        min={5} max={3600} step={5}
+                        defaultValue={ex.workTime ?? workout.workTime}
                         className="w-16 bg-transparent text-white text-sm text-center focus:outline-none border-b border-white/30"
                         onBlur={(e) => {
                           const val = parseInt(e.target.value)
-                          if (!isNaN(val) && val >= 0) {
-                            updateExercise(group.id, ex.id, isEditingWork ? { workTime: val } : { restTime: val })
-                          }
+                          if (!isNaN(val) && val >= 5) updateExercise(group.id, ex.id, { workTime: val })
                           setEditingExtra(null)
                         }}
                         onKeyDown={(e) => {
@@ -301,18 +284,54 @@ export function ExercisesTab({ workout, onChange }: Props) {
                         }}
                       />
                       <span className="text-white/30 text-xs">sec</span>
-                      {(isEditingWork ? hasCustomWork : hasCustomRest) && (
-                        <button
-                          onClick={() => {
-                            updateExercise(group.id, ex.id, isEditingWork ? { workTime: undefined } : { restTime: undefined })
-                            setEditingExtra(null)
-                          }}
-                          className="text-white/25 text-xs hover:text-white/50 transition-colors"
-                        >
-                          reset
-                        </button>
+                      {hasCustomWork && (
+                        <button onClick={() => { updateExercise(group.id, ex.id, { workTime: undefined }); setEditingExtra(null) }}
+                          className="text-white/25 text-xs hover:text-white/50 transition-colors">reset</button>
                       )}
                     </div>
+                  )}
+
+                  {/* Rest separator between this exercise and the next */}
+                  {!isLastEx && (
+                    isEditingRest ? (
+                      <div className="flex items-center gap-3 py-2 pl-10">
+                        <span className="text-white/30 text-xs">Rest:</span>
+                        <input
+                          ref={extraInputRef}
+                          type="number"
+                          min={0} max={300} step={5}
+                          defaultValue={ex.restTime ?? workout.restTime}
+                          className="w-16 bg-transparent text-white text-sm text-center focus:outline-none border-b border-white/30"
+                          onBlur={(e) => {
+                            const val = parseInt(e.target.value)
+                            if (!isNaN(val) && val >= 0) updateExercise(group.id, ex.id, { restTime: val })
+                            setEditingExtra(null)
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') e.currentTarget.blur()
+                            if (e.key === 'Escape') setEditingExtra(null)
+                          }}
+                          autoFocus
+                        />
+                        <span className="text-white/30 text-xs">sec</span>
+                        {hasCustomRest && (
+                          <button onClick={() => { updateExercise(group.id, ex.id, { restTime: undefined }); setEditingExtra(null) }}
+                            className="text-white/25 text-xs hover:text-white/50 transition-colors">reset</button>
+                        )}
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => openExtra('rest')}
+                        className="flex items-center w-full py-1 gap-2 group"
+                      >
+                        <div className="h-px flex-1 ml-9 transition-colors" style={{ backgroundColor: hasCustomRest ? 'rgba(0,217,160,0.25)' : 'rgba(255,255,255,0.06)' }} />
+                        <span className="text-xs tabular-nums transition-colors shrink-0"
+                          style={{ color: hasCustomRest ? (ex.restTime === 0 ? 'rgba(255,255,255,0.2)' : '#00d9a0') : 'rgba(255,255,255,0.2)' }}>
+                          {ex.restTime === 0 ? 'no rest' : `rest ${ex.restTime ?? workout.restTime}s`}
+                        </span>
+                        <div className="h-px flex-1 mr-1 transition-colors" style={{ backgroundColor: hasCustomRest ? 'rgba(0,217,160,0.25)' : 'rgba(255,255,255,0.06)' }} />
+                      </button>
+                    )
                   )}
                 </div>
               )
