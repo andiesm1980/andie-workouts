@@ -45,6 +45,8 @@ export function buildSegments(workout: Workout): Segment[] {
       const isLastGroup = gIdx === groups.length - 1
       const exCount = (group.exercises ?? []).length
 
+      const setBreakDur = group.setBreak !== undefined ? group.setBreak : cycleBreak
+
       for (let set = 1; set <= rounds; set++) {
         const isLastSet = set === rounds
         for (let exIdx = 0; exIdx < exCount; exIdx++) {
@@ -52,15 +54,17 @@ export function buildSegments(workout: Workout): Segment[] {
           const isLastEx = exIdx === exCount - 1
           const workDur = ex.workTime ?? workout.workTime
           segments.push({ phase: 'work', duration: workDur, label: ex.name, round: set, exerciseIndex: exIdx, groupIndex: gIdx })
-          // rest between exercises, AND after the last exercise before the next set starts
-          if (!isLastEx || !isLastSet) {
+          // Rest between exercises within a set.
+          // After the last exercise: only add a rest if there's no break configured,
+          // so we don't double-up with rest → break between sets.
+          const wantRest = !isLastEx || (!isLastSet && setBreakDur === 0)
+          if (wantRest) {
             const restDur = ex.restTime ?? workout.restTime
             if (restDur > 0) {
               segments.push({ phase: 'rest', duration: restDur, label: 'Rest', round: set, exerciseIndex: exIdx, groupIndex: gIdx })
             }
           }
         }
-        const setBreakDur = group.setBreak !== undefined ? group.setBreak : cycleBreak
         if (!isLastSet && setBreakDur > 0) {
           segments.push({ phase: 'break', duration: setBreakDur, label: 'Break', round: set, exerciseIndex: 0, groupIndex: gIdx })
         }

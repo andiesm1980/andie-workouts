@@ -14,19 +14,21 @@ export function computeTotalTime(workout: Workout): number {
     groups.forEach((group, gIdx) => {
       const exercises = group.exercises ?? []
       const restTime = workout.restTime
-      // Per set: each exercise has work time, plus rest after each except the last exercise of the last set.
-      // Non-last sets: exCount rests (including after last exercise). Last set: (exCount - 1) rests.
-      const restPerNonLastSet = exercises.reduce((sum, ex) => {
-        const restDur = ex.restTime ?? restTime
-        return restDur > 0 ? sum + restDur : sum
-      }, 0)
-      const restPerLastSet = exercises.slice(0, -1).reduce((sum, ex) => {
-        const restDur = ex.restTime ?? restTime
-        return restDur > 0 ? sum + restDur : sum
-      }, 0)
-      const workPerSet = exercises.reduce((sum, ex) => sum + (ex.workTime ?? workout.workTime), 0)
       const setBreakDur = group.setBreak !== undefined ? group.setBreak : cycleBreak
-      total += (rounds - 1) * (workPerSet + restPerNonLastSet + setBreakDur) + (workPerSet + restPerLastSet)
+      const workPerSet = exercises.reduce((sum, ex) => sum + (ex.workTime ?? workout.workTime), 0)
+      // Rests between exercises (never after the last exercise when a break is configured)
+      const innerRests = exercises.slice(0, -1).reduce((sum, ex) => {
+        const r = ex.restTime ?? restTime
+        return sum + (r > 0 ? r : 0)
+      }, 0)
+      // When no break, the last exercise's rest bridges sets
+      const lastExRest = setBreakDur === 0 ? (() => {
+        const last = exercises[exercises.length - 1]
+        const r = last ? (last.restTime ?? restTime) : 0
+        return r > 0 ? r : 0
+      })() : 0
+      const interSetGap = setBreakDur > 0 ? setBreakDur : lastExRest
+      total += rounds * (workPerSet + innerRests) + (rounds - 1) * interSetGap
       if (gIdx < groups.length - 1) {
         total += group.restAfter !== undefined ? group.restAfter : cycleBreak
       }
