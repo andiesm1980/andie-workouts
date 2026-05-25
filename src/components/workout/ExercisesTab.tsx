@@ -30,11 +30,9 @@ interface GroupDragState { fromIdx: number }
 export function ExercisesTab({ workout, onChange }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingExtra, setEditingExtra] = useState<{ id: string; field: 'work' | 'rest' } | null>(null)
-  const [editingGroupField, setEditingGroupField] = useState<{ id: string; field: 'setBreak' | 'restAfter' } | null>(null)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const extraInputRef = useRef<HTMLInputElement>(null)
-  const groupFieldInputRef = useRef<HTMLInputElement>(null)
   const rowEls = useRef<Map<string, HTMLElement>>(new Map())
   const groupEls = useRef<Map<string, HTMLElement>>(new Map())
 
@@ -45,10 +43,6 @@ export function ExercisesTab({ workout, onChange }: Props) {
   const updateGroup = useCallback((groupId: string, exercises: Exercise[]) => {
     onChange({ exerciseGroups: (workout.exerciseGroups ?? []).map((g) => (g.id === groupId ? { ...g, exercises } : g)) })
   }, [workout.exerciseGroups, onChange])
-
-  const updateGroupMeta = (groupId: string, updates: Partial<ExerciseGroup>) => {
-    updateGroups((workout.exerciseGroups ?? []).map((g) => (g.id === groupId ? { ...g, ...updates } : g)))
-  }
 
   // Exercise drag-to-reorder
   const exDrag = useDrag<ExDragState>(
@@ -338,77 +332,6 @@ export function ExercisesTab({ workout, onChange }: Props) {
               <span className="text-sm">Add exercise</span>
             </button>
 
-            {/* Per-superset timing overrides */}
-            <div style={{ borderTop: '1px solid rgba(78,143,255,0.08)', marginTop: 2 }}>
-              {(['setBreak', 'restAfter'] as const).map((field) => {
-                const isLast = gIdx === groups.length - 1
-                if (field === 'restAfter' && (groups.length <= 1 || isLast)) return null
-
-                const label = field === 'setBreak' ? 'Rest between sets' : 'Rest after superset'
-                const value = group[field]
-                const defaultVal = field === 'restAfter'
-                  ? (workout.supersetBreak !== undefined ? workout.supersetBreak : workout.cycleBreak)
-                  : workout.cycleBreak
-                const isEditing = editingGroupField?.id === group.id && editingGroupField.field === field
-
-                return (
-                  <div key={field}>
-                    {isEditing ? (
-                      <div className="flex items-center gap-3 py-2.5">
-                        <span className="text-white/25 text-xs flex-1">{label}</span>
-                        <input
-                          ref={groupFieldInputRef}
-                          type="number"
-                          min={0}
-                          max={600}
-                          step={5}
-                          defaultValue={value ?? defaultVal}
-                          className="w-14 bg-transparent text-white text-sm text-center focus:outline-none border-b border-white/30"
-                          onBlur={(e) => {
-                            const val = parseInt(e.target.value)
-                            updateGroupMeta(group.id, { [field]: isNaN(val) ? undefined : Math.max(0, val) })
-                            setEditingGroupField(null)
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') e.currentTarget.blur()
-                            if (e.key === 'Escape') setEditingGroupField(null)
-                          }}
-                          autoFocus
-                        />
-                        <span className="text-white/25 text-xs">sec</span>
-                        {value !== undefined && (
-                          <button
-                            onClick={() => { updateGroupMeta(group.id, { [field]: undefined }); setEditingGroupField(null) }}
-                            className="text-white/25 text-xs hover:text-white/50 transition-colors"
-                          >
-                            reset
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setEditingGroupField({ id: group.id, field })
-                          setTimeout(() => groupFieldInputRef.current?.focus(), 50)
-                        }}
-                        className="flex items-center justify-between w-full py-2.5"
-                      >
-                        <span className="text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>{label}</span>
-                        <span
-                          className="px-2 py-1 rounded-lg text-xs tabular-nums"
-                          style={{
-                            backgroundColor: value !== undefined ? 'rgba(0,217,160,0.12)' : 'rgba(255,255,255,0.05)',
-                            color: value !== undefined ? '#00d9a0' : 'rgba(255,255,255,0.25)',
-                          }}
-                        >
-                          {value !== undefined ? `${value}s` : `${defaultVal}s`}
-                        </span>
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
           </div>
         )
       })}

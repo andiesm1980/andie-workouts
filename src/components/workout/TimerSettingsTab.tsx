@@ -155,17 +155,6 @@ export function TimerSettingsTab({ workout, onChange }: Props) {
         )}
       </div>
 
-      {/* Superset Rest — circuit only */}
-      {workout.type === 'circuit' && (
-        <Row label="Superset Rest">
-          <StepInput
-            value={workout.supersetBreak ?? workout.cycleBreak}
-            onChange={(v) => onChange({ supersetBreak: v })}
-            min={0} max={600} step={5} format="time"
-          />
-        </Row>
-      )}
-
       {/* Add warm up and cool down */}
       <button
         onClick={() => setWarmCoolOpen((o) => !o)}

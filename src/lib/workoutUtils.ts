@@ -14,24 +14,21 @@ export function computeTotalTime(workout: Workout): number {
     groups.forEach((group, gIdx) => {
       const exercises = group.exercises ?? []
       const restTime = workout.restTime
-      const setBreakDur = group.setBreak !== undefined ? group.setBreak : cycleBreak
       const workPerSet = exercises.reduce((sum, ex) => sum + (ex.workTime ?? workout.workTime), 0)
-      // Rests between exercises (never after the last exercise when a break is configured)
-      const innerRests = exercises.slice(0, -1).reduce((sum, ex) => {
+      // All rests including after last exercise (used as set transition for non-last sets)
+      const allRests = exercises.reduce((sum, ex) => {
         const r = ex.restTime ?? restTime
         return sum + (r > 0 ? r : 0)
       }, 0)
-      // When no break, the last exercise's rest bridges sets
-      const lastExRest = setBreakDur === 0 ? (() => {
-        const last = exercises[exercises.length - 1]
-        const r = last ? (last.restTime ?? restTime) : 0
-        return r > 0 ? r : 0
-      })() : 0
-      const interSetGap = setBreakDur > 0 ? setBreakDur : lastExRest
-      total += rounds * (workPerSet + innerRests) + (rounds - 1) * interSetGap
+      // Last set: rest between exercises only (no rest after last exercise)
+      const lastSetRests = exercises.slice(0, -1).reduce((sum, ex) => {
+        const r = ex.restTime ?? restTime
+        return sum + (r > 0 ? r : 0)
+      }, 0)
+      total += (rounds - 1) * (workPerSet + allRests) + (workPerSet + lastSetRests)
+      // Break after all sets of this superset (before next superset)
       if (gIdx < groups.length - 1) {
-        const defaultSupersetBreak = workout.supersetBreak !== undefined ? workout.supersetBreak : cycleBreak
-        total += group.restAfter !== undefined ? group.restAfter : defaultSupersetBreak
+        total += cycleBreak
       }
     })
   }

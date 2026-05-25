@@ -19,8 +19,6 @@ export interface CompletedSession {
 export interface ExerciseGroup {
   id: string
   exercises: Exercise[]
-  setBreak?: number   // rest between sets of this superset (overrides cycleBreak)
-  restAfter?: number  // rest after all sets before next superset (overrides workout.supersetBreak)
 }
 
 export interface Workout {
@@ -31,8 +29,7 @@ export interface Workout {
   restTime: number    // seconds per rest interval
   intervals: number   // work+rest pairs per cycle (hiit only)
   rounds: number      // sets per group
-  cycleBreak: number    // rest between sets within a superset (seconds)
-  supersetBreak?: number // rest between supersets (seconds); defaults to cycleBreak if unset
+  cycleBreak: number  // break after all sets of a superset are done (seconds)
   warmup: number      // get ready countdown (seconds)
   cooldown: number    // cool down (seconds)
   exerciseGroups: ExerciseGroup[]
