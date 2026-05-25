@@ -1,16 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 206 206">
-  <defs>
-    <radialGradient id="bg" cx="50%" cy="50%" r="71%">
-      <stop offset="0%" stop-color="#242429"/>
-      <stop offset="100%" stop-color="#18181B"/>
-    </radialGradient>
-    <clipPath id="clip">
-      <rect width="206" height="206" rx="48"/>
-    </clipPath>
-  </defs>
-  <g clip-path="url(#clip)">
-    <rect width="206" height="206" fill="url(#bg)"/>
-    <g transform="translate(103,103) scale(0.8) translate(-103,-103)">
+<svg width="206" height="206" viewBox="0 0 206 206" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <radialGradient id="icon_bg" cx="50%" cy="50%" r="71%">
+    <stop offset="0%" stop-color="#242429"/>
+    <stop offset="100%" stop-color="#18181B"/>
+  </radialGradient>
+  <clipPath id="clip">
+    <rect width="206" height="206" rx="48" fill="white"/>
+  </clipPath>
+  <filter id="bars_glow" x="-20%" y="-30%" width="140%" height="160%" color-interpolation-filters="sRGB">
+    <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+    <feOffset/>
+    <feGaussianBlur stdDeviation="10"/>
+    <feComposite in2="hardAlpha" operator="out"/>
+    <feColorMatrix type="matrix" values="0 0 0 0 0.741176 0 0 0 0 0.913725 0 0 0 0 0.231373 0 0 0 0.4 0"/>
+    <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/>
+    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+    <feOffset/>
+    <feGaussianBlur stdDeviation="4"/>
+    <feComposite in2="hardAlpha" operator="out"/>
+    <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.4 0"/>
+    <feBlend mode="normal" in2="effect1_dropShadow" result="effect2_dropShadow"/>
+    <feBlend mode="normal" in="SourceGraphic" in2="effect2_dropShadow" result="shape"/>
+  </filter>
+</defs>
+<g clip-path="url(#clip)">
+  <rect width="206" height="206" fill="url(#icon_bg)"/>
+  <g transform="translate(103,103) scale(0.8) translate(-103,-103)">
+    <g filter="url(#bars_glow)">
       <path d="M74.9434 143H60.6035L77.9619 63H92.3018L74.9434 143Z" fill="#CBFA45"/>
       <path d="M129.283 143H114.943L132.302 63H146.642L129.283 143Z" fill="#CBFA45"/>
       <path d="M152.68 128.66H138.34L147.396 86.3965H161.735L152.68 128.66Z" fill="#CBFA45"/>
@@ -18,4 +35,5 @@
       <path d="M116.83 109.038H87.7734L90.793 95.8301H119.85L116.83 109.038Z" fill="#CBFA45"/>
     </g>
   </g>
+</g>
 </svg>
