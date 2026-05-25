@@ -285,7 +285,8 @@ export function ExercisesTab({ workout, onChange }: Props) {
                       />
                       <span className="text-white/30 text-xs">sec</span>
                       {hasCustomWork && (
-                        <button onClick={() => { updateExercise(group.id, ex.id, { workTime: undefined }); setEditingExtra(null) }}
+                        <button
+                          onPointerDown={(e) => { e.preventDefault(); updateExercise(group.id, ex.id, { workTime: undefined }); setEditingExtra(null) }}
                           className="text-white/25 text-xs hover:text-white/50 transition-colors">reset</button>
                       )}
                     </div>
@@ -315,7 +316,8 @@ export function ExercisesTab({ workout, onChange }: Props) {
                         />
                         <span className="text-white/30 text-xs">sec</span>
                         {hasCustomRest && (
-                          <button onClick={() => { updateExercise(group.id, ex.id, { restTime: undefined }); setEditingExtra(null) }}
+                          <button
+                            onPointerDown={(e) => { e.preventDefault(); updateExercise(group.id, ex.id, { restTime: undefined }); setEditingExtra(null) }}
                             className="text-white/25 text-xs hover:text-white/50 transition-colors">reset</button>
                         )}
                       </div>
