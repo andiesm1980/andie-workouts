@@ -45,7 +45,7 @@ function newWorkout(type: WorkoutType): Workout {
 
 export default function HomePage() {
   const router = useRouter()
-  const { workouts, sessions, addWorkout, clearHistory, moveWorkout, setSessions, reminderDays, lastBackupAt, reminderSnoozedAt, setReminderDays, setLastBackupAt, setReminderSnoozedAt } = useWorkoutStore()
+  const { workouts, sessions, addWorkout, deleteWorkout, clearHistory, moveWorkout, setSessions, reminderDays, lastBackupAt, reminderSnoozedAt, setReminderDays, setLastBackupAt, setReminderSnoozedAt } = useWorkoutStore()
   const drive = useDrive()
 
   // Auto-save to GitHub whenever workouts or sessions change
@@ -57,6 +57,7 @@ export default function HomePage() {
   const [showHistory, setShowHistory] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showOverflow, setShowOverflow] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
@@ -274,6 +275,7 @@ export default function HomePage() {
                     workout={workout}
                     onSelect={handleSelect}
                     selected={selectedId === workout.id}
+                    onDelete={() => setDeletingId(workout.id)}
                     onDragHandlePointerDown={canDrag ? (e) => startDrag(e, { fromIdx: globalIdx, id: workout.id }) : undefined}
                   />
                 </div>
@@ -375,6 +377,39 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {/* Delete confirm sheet */}
+      {deletingId && (
+        <div
+          className="fixed inset-0 z-50 flex items-end"
+          style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
+          onClick={() => setDeletingId(null)}
+        >
+          <div
+            className="w-full rounded-t-3xl px-6 pt-5"
+            style={{ backgroundColor: '#13131a', paddingBottom: 'max(env(safe-area-inset-bottom), 28px)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} />
+            <p className="text-white text-lg font-semibold text-center mb-1">Delete workout?</p>
+            <p className="text-white/35 text-sm text-center mb-6">This cannot be undone.</p>
+            <button
+              onClick={() => { deleteWorkout(deletingId); setDeletingId(null) }}
+              className="w-full py-4 rounded-2xl font-semibold text-sm mb-3 transition-all active:scale-98"
+              style={{ backgroundColor: 'rgba(239,68,68,0.18)', color: '#f87171' }}
+            >
+              Delete
+            </button>
+            <button
+              onClick={() => setDeletingId(null)}
+              className="w-full py-3 text-sm transition-colors"
+              style={{ color: 'rgba(255,255,255,0.35)' }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* FAB — mobile only */}
       <button

@@ -52,8 +52,6 @@ export function buildSegments(workout: Workout): Segment[] {
           const isLastEx = exIdx === exCount - 1
           const workDur = ex.workTime ?? workout.workTime
           segments.push({ phase: 'work', duration: workDur, label: ex.name, round: set, exerciseIndex: exIdx, groupIndex: gIdx })
-          // Rest between exercises, and after the last exercise of each non-last set
-          // (acts as the transition into the next set — no separate set break).
           if (!isLastEx || !isLastSet) {
             const restDur = ex.restTime ?? workout.restTime
             if (restDur > 0) {
@@ -63,7 +61,6 @@ export function buildSegments(workout: Workout): Segment[] {
         }
       }
 
-      // Break after all sets of this superset are done (before the next superset)
       if (!isLastGroup && cycleBreak > 0) {
         segments.push({ phase: 'break', duration: cycleBreak, label: 'Break', round: rounds, exerciseIndex: 0, groupIndex: gIdx })
       }
@@ -99,55 +96,82 @@ export function useTimer(workout: Workout) {
   const segmentsRef = useRef(segments)
   segmentsRef.current = segments
 
+  // Timestamp when the current segment should end. Set whenever the timer
+  // starts/resumes or a new segment begins. Used by tick() so the countdown
+  // stays accurate even if JS is throttled while the app is backgrounded.
+  const endAtRef = useRef<number>(0)
+  // Tracks which countdown second already had its beep, preventing double-fire
+  // on 500ms ticks when both ticks land on the same displayed second.
+  const lastBeepRef = useRef<number>(-1)
+
+  const advanceSegment = useCallback((fromIndex: number, segs: Segment[]) => {
+    const nextIndex = fromIndex + 1
+    if (nextIndex >= segs.length) {
+      setState((s) => ({ ...s, isRunning: false, isComplete: true, timeRemaining: 0 }))
+      playComplete(); haptic('complete')
+    } else {
+      const dur = segs[nextIndex].duration
+      endAtRef.current = Date.now() + dur * 1000
+      lastBeepRef.current = -1
+      playPhaseStart(); haptic('phase')
+      setState((s) => ({ ...s, segmentIndex: nextIndex, timeRemaining: dur }))
+    }
+  }, [])
+
   const tick = useCallback(() => {
-    const { segmentIndex, timeRemaining, isRunning, isComplete } = stateRef.current
+    const { segmentIndex, isRunning, isComplete } = stateRef.current
     const segs = segmentsRef.current
     if (!isRunning || isComplete) return
 
-    if (timeRemaining > 1) {
-      if (timeRemaining <= 4) { playCountdownBeep(); haptic('countdown') }
-      setState((s) => ({ ...s, timeRemaining: s.timeRemaining - 1 }))
-    } else {
-      const nextIndex = segmentIndex + 1
-      if (nextIndex >= segs.length) {
-        setState((s) => ({ ...s, isRunning: false, isComplete: true, timeRemaining: 0 }))
-        playComplete(); haptic('complete')
-      } else {
-        playPhaseStart(); haptic('phase')
-        setState((s) => ({ ...s, segmentIndex: nextIndex, timeRemaining: segs[nextIndex].duration }))
-      }
+    const remaining = Math.max(0, Math.ceil((endAtRef.current - Date.now()) / 1000))
+
+    if (remaining > 0 && remaining <= 3 && remaining !== lastBeepRef.current) {
+      lastBeepRef.current = remaining
+      playCountdownBeep(); haptic('countdown')
     }
-  }, [])
+
+    if (remaining > 0) {
+      setState((s) => ({ ...s, timeRemaining: remaining }))
+    } else {
+      advanceSegment(segmentIndex, segs)
+    }
+  }, [advanceSegment])
 
   const tickRef = useRef(tick)
   tickRef.current = tick
 
   useEffect(() => {
     if (!state.isRunning) return
-    const id = setInterval(() => tickRef.current(), 1000)
+    const id = setInterval(() => tickRef.current(), 500)
     return () => clearInterval(id)
   }, [state.isRunning])
 
-  const start = useCallback(() => setState((s) => ({ ...s, isRunning: true })), [])
+  const start = useCallback(() => {
+    endAtRef.current = Date.now() + stateRef.current.timeRemaining * 1000
+    lastBeepRef.current = -1
+    setState((s) => ({ ...s, isRunning: true }))
+  }, [])
+
   const pause = useCallback(() => setState((s) => ({ ...s, isRunning: false })), [])
-  const toggle = useCallback(() => setState((s) => ({ ...s, isRunning: !s.isRunning })), [])
+
+  const toggle = useCallback(() => {
+    const s = stateRef.current
+    if (!s.isRunning) {
+      endAtRef.current = Date.now() + s.timeRemaining * 1000
+      lastBeepRef.current = -1
+    }
+    setState((prev) => ({ ...prev, isRunning: !prev.isRunning }))
+  }, [])
 
   const reset = useCallback(() => {
+    endAtRef.current = 0
+    lastBeepRef.current = -1
     setState({ segmentIndex: 0, timeRemaining: segmentsRef.current[0]?.duration ?? 0, isRunning: false, isComplete: false })
   }, [])
 
   const skipToNext = useCallback(() => {
-    const { segmentIndex } = stateRef.current
-    const segs = segmentsRef.current
-    const nextIndex = segmentIndex + 1
-    if (nextIndex >= segs.length) {
-      setState((s) => ({ ...s, isRunning: false, isComplete: true, timeRemaining: 0 }))
-      playComplete()
-    } else {
-      playPhaseStart()
-      setState((s) => ({ ...s, segmentIndex: nextIndex, timeRemaining: segs[nextIndex].duration }))
-    }
-  }, [])
+    advanceSegment(stateRef.current.segmentIndex, segmentsRef.current)
+  }, [advanceSegment])
 
   const skipToPrev = useCallback(() => {
     const { segmentIndex, timeRemaining } = stateRef.current
@@ -155,11 +179,16 @@ export function useTimer(workout: Workout) {
     const currentDuration = segs[segmentIndex]?.duration ?? 0
     const elapsed = currentDuration - timeRemaining
     if (elapsed > 2 || segmentIndex === 0) {
+      endAtRef.current = Date.now() + currentDuration * 1000
+      lastBeepRef.current = -1
       setState((s) => ({ ...s, timeRemaining: currentDuration }))
     } else {
       const prevIndex = segmentIndex - 1
+      const dur = segs[prevIndex].duration
+      endAtRef.current = Date.now() + dur * 1000
+      lastBeepRef.current = -1
       playPhaseStart()
-      setState((s) => ({ ...s, segmentIndex: prevIndex, timeRemaining: segs[prevIndex].duration }))
+      setState((s) => ({ ...s, segmentIndex: prevIndex, timeRemaining: dur }))
     }
   }, [])
 
