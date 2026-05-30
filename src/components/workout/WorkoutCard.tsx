@@ -113,7 +113,7 @@ export function WorkoutCard({ workout, onSelect, selected, onDelete, onDragHandl
         style={{
           transform: `translateX(${offset}px)`,
           transition: isAnimating ? 'transform 0.25s ease' : 'none',
-          backgroundColor: selected ? '#1f1f22' : '#161619',
+          backgroundColor: selected ? '#262638' : '#1e1e2a',
         }}
       >
         {/* Accent stripe */}

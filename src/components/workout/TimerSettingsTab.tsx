@@ -45,9 +45,10 @@ export function TimerSettingsTab({ workout, onChange }: Props) {
               style={{
                 width: 22, height: 22,
                 backgroundColor: c,
-                outline: activeAccent === c ? `2px solid ${c}` : 'none',
+                outline: activeAccent === c ? '2.5px solid rgba(255,255,255,0.9)' : '2.5px solid transparent',
                 outlineOffset: 2,
-                opacity: activeAccent === c ? 1 : 0.45,
+                opacity: activeAccent === c ? 1 : 0.55,
+                transform: activeAccent === c ? 'scale(1.15)' : 'scale(1)',
               }}
               aria-label={`Accent colour ${c}`}
             />
@@ -199,7 +200,7 @@ export function TimerSettingsTab({ workout, onChange }: Props) {
         >
           <div
             className="absolute inset-0 rounded-full transition-colors duration-200"
-            style={{ backgroundColor: workout.autoStart ? '#f0407a' : 'rgba(255,255,255,0.12)' }}
+            style={{ backgroundColor: workout.autoStart ? activeAccent : 'rgba(255,255,255,0.12)' }}
           />
           <div
             className="absolute top-[3px] rounded-full transition-transform duration-200"

@@ -78,7 +78,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
   const tabs: Tab[] = workout.type === 'circuit' ? ['timer', 'exercises'] : ['timer']
 
   return (
-    <div className="flex flex-col h-full" style={{ backgroundColor: '#0c0c0f', minHeight: onClose ? undefined : '100dvh' }}>
+    <div className="flex flex-col h-full" style={{ backgroundColor: '#12121a', minHeight: onClose ? undefined : '100dvh' }}>
       {/* Header */}
       <div
         className="shrink-0 px-5"
@@ -218,7 +218,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
         <button
           onClick={() => router.push(`/timer/${workout.id}`)}
           className="w-full py-4 rounded-2xl font-semibold text-base transition-all active:scale-98"
-          style={{ backgroundColor: accent, color: accentText(accent) }}
+          style={{ backgroundColor: accent, color: accentText(accent), boxShadow: `0 6px 28px ${accent}55` }}
         >
           Start — {formatDuration(totalTime)}
         </button>
@@ -233,7 +233,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
         >
           <div
             className="w-full rounded-t-3xl px-4 pt-4"
-            style={{ backgroundColor: '#13131a', paddingBottom: 'max(env(safe-area-inset-bottom), 20px)' }}
+            style={{ backgroundColor: '#1a1a26', paddingBottom: 'max(env(safe-area-inset-bottom), 20px)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} />
@@ -317,7 +317,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
         >
           <div
             className="w-full rounded-t-3xl px-6 pt-5"
-            style={{ backgroundColor: '#13131a', paddingBottom: 'max(env(safe-area-inset-bottom), 28px)' }}
+            style={{ backgroundColor: '#1a1a26', paddingBottom: 'max(env(safe-area-inset-bottom), 28px)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} />

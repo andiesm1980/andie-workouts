@@ -286,7 +286,7 @@ export default function HomePage() {
             </button>
           </div>
         ) : filtered.length === 0 ? (
-          <p className="text-white/20 text-sm py-10 text-center">No workouts match "{query}"</p>
+          <p className="text-white/30 text-sm py-10 text-center">No workouts match "{query}"</p>
         ) : (
           filtered.map((workout, i) => {
             const globalIdx = workouts.indexOf(workout)
@@ -324,8 +324,8 @@ export default function HomePage() {
               className="flex items-center justify-between w-full mb-3"
               onClick={() => setShowHistory((v) => !v)}
             >
-              <span className="text-white/25 text-xs font-semibold tracking-widest uppercase">History</span>
-              <span className="text-white/20 text-xs">{showHistory ? '▲' : '▼'}</span>
+              <span className="text-white/35 text-xs font-semibold tracking-widest uppercase">History</span>
+              <span className="text-white/30 text-xs">{showHistory ? '▲' : '▼'}</span>
             </button>
             {showHistory && (
               <div className="flex flex-col gap-1.5">
@@ -364,7 +364,7 @@ export default function HomePage() {
   )
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden" style={{ backgroundColor: '#0c0c0f' }}>
+    <div className="flex h-[100dvh] overflow-hidden" style={{ backgroundColor: '#12121a' }}>
 
       {/* Sidebar — full width on mobile, 360px on desktop */}
       <div
@@ -424,7 +424,7 @@ export default function HomePage() {
         >
           <div
             className="w-full rounded-t-3xl px-6 pt-5"
-            style={{ backgroundColor: '#13131a', paddingBottom: 'max(env(safe-area-inset-bottom), 28px)' }}
+            style={{ backgroundColor: '#1a1a26', paddingBottom: 'max(env(safe-area-inset-bottom), 28px)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} />
@@ -477,7 +477,7 @@ export default function HomePage() {
         >
           <div
             className="w-full rounded-t-3xl px-4 pt-4"
-            style={{ backgroundColor: '#13131a', paddingBottom: 'max(env(safe-area-inset-bottom), 20px)' }}
+            style={{ backgroundColor: '#1a1a26', paddingBottom: 'max(env(safe-area-inset-bottom), 20px)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} />
@@ -538,7 +538,7 @@ export default function HomePage() {
         >
           <div
             className="w-full rounded-t-3xl px-6 pt-5"
-            style={{ backgroundColor: '#13131a', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}
+            style={{ backgroundColor: '#1a1a26', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} />
@@ -669,7 +669,7 @@ export default function HomePage() {
         >
           <div
             className="w-full rounded-t-3xl px-6 pt-6"
-            style={{ backgroundColor: '#13131a', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}
+            style={{ backgroundColor: '#1a1a26', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-10 h-1 rounded-full mx-auto mb-6" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />
