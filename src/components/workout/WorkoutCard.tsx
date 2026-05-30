@@ -80,8 +80,7 @@ export function WorkoutCard({ workout, onSelect, selected, onDelete, onDragHandl
 
   return (
     <div
-      className="relative overflow-hidden"
-      style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+      className="relative overflow-hidden rounded-xl"
       onPointerDown={onCardPointerDown}
       onPointerMove={onCardPointerMove}
       onPointerUp={onCardPointerUp}
@@ -114,13 +113,13 @@ export function WorkoutCard({ workout, onSelect, selected, onDelete, onDragHandl
         style={{
           transform: `translateX(${offset}px)`,
           transition: isAnimating ? 'transform 0.25s ease' : 'none',
-          backgroundColor: selected ? 'rgba(255,255,255,0.05)' : '#0c0c0f',
+          backgroundColor: selected ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
         }}
       >
         {/* Accent stripe */}
         <div
           className="self-stretch w-[3px] rounded-full shrink-0"
-          style={{ backgroundColor: accent + '55' }}
+          style={{ backgroundColor: accent + '80' }}
         />
 
         {onDragHandlePointerDown && (
@@ -155,7 +154,12 @@ export function WorkoutCard({ workout, onSelect, selected, onDelete, onDragHandl
                 </svg>
               )}
             </div>
-            {exCount !== null && exCount > 0 && (
+            {workout.type === 'hiit' && (
+              <p className="text-white/25 text-xs mt-0.5 truncate">
+                {workout.rounds} rounds · {workout.workTime}s / {workout.restTime}s
+              </p>
+            )}
+            {workout.type === 'circuit' && exCount !== null && exCount > 0 && (
               <p className="text-white/25 text-xs mt-0.5 truncate">
                 {exCount} exercise{exCount !== 1 ? 's' : ''}
               </p>

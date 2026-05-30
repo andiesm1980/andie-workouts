@@ -11,6 +11,11 @@ import { useDrag } from '@/hooks/useDrag'
 import { useDrive } from '@/context/DriveContext'
 import type { Workout, WorkoutType } from '@/types/workout'
 
+const TYPE_COLOR: Record<string, string> = {
+  hiit: '#f0407a',
+  circuit: '#4e8fff',
+}
+
 function relativeDate(ts: number): string {
   const diff = Date.now() - ts
   const days = Math.floor(diff / 86400000)
@@ -79,6 +84,12 @@ export default function HomePage() {
     return workouts.filter((w) => w.name.toLowerCase().includes(q))
   }, [workouts, query])
 
+  const workoutTypeMap = useMemo(() => {
+    const m = new Map<string, string>()
+    workouts.forEach((w) => m.set(w.id, w.type))
+    return m
+  }, [workouts])
+
   const getDropIdx = useCallback((y: number) => {
     let best = workouts.length
     let bestDist = Infinity
@@ -144,9 +155,14 @@ export default function HomePage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div
-        className="shrink-0 px-6"
+        className="shrink-0 px-6 relative"
         style={{ paddingTop: 'max(env(safe-area-inset-top), 32px)', paddingBottom: 16 }}
       >
+        {/* Brand glow */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse 70% 90% at 15% 40%, rgba(240,64,122,0.09) 0%, transparent 70%)' }}
+        />
         <input
           ref={importInputRef}
           type="file"
@@ -244,15 +260,29 @@ export default function HomePage() {
       <div className="h-px mx-6 shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
 
       {/* Scrollable list */}
-      <div className="flex-1 overflow-y-auto px-6 pb-32 md:pb-12">
+      <div className="flex-1 overflow-y-auto px-6 pt-3 pb-32 md:pb-12">
         {workouts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-32 text-center">
-            <p className="text-white/20 text-sm mb-6">No workouts yet</p>
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div
+              className="w-28 h-28 rounded-full flex items-center justify-center mb-6"
+              style={{
+                background: 'radial-gradient(circle at 40% 35%, rgba(240,64,122,0.14) 0%, rgba(255,255,255,0.03) 70%)',
+                border: '1px solid rgba(240,64,122,0.18)',
+                boxShadow: '0 0 60px rgba(240,64,122,0.07)',
+              }}
+            >
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(240,64,122,0.65)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+            </div>
+            <p className="text-white/60 text-base font-semibold mb-2">No workouts yet</p>
+            <p className="text-white/25 text-sm mb-8 max-w-[200px] leading-relaxed">Create your first workout to get started</p>
             <button
               onClick={() => setShowPicker(true)}
-              className="px-6 py-3 rounded-xl font-semibold text-sm border border-white/12 text-white/50 hover:text-white/70 hover:border-white/20 transition-all"
+              className="px-8 py-3.5 rounded-2xl font-semibold text-sm transition-all active:scale-95"
+              style={{ backgroundColor: '#f0407a', color: '#fff', boxShadow: '0 4px 20px rgba(240,64,122,0.35)' }}
             >
-              Create your first workout
+              Create workout
             </button>
           </div>
         ) : filtered.length === 0 ? (
@@ -263,7 +293,7 @@ export default function HomePage() {
             const isDragging = dragActive?.id === workout.id
             const canDrag = !query.trim()
             return (
-              <div key={workout.id} style={{ position: 'relative' }}>
+              <div key={workout.id} style={{ position: 'relative', marginBottom: 8 }}>
                 {canDrag && dropTarget === i && dragActive && dragActive.id !== workout.id && (
                   <div className="h-0.5 rounded-full mx-2 mb-1" style={{ backgroundColor: '#f0407a' }} />
                 )}
@@ -298,23 +328,30 @@ export default function HomePage() {
               <span className="text-white/20 text-xs">{showHistory ? '▲' : '▼'}</span>
             </button>
             {showHistory && (
-              <div>
-                {sessions.slice(0, 20).map((s) => (
-                  <div
-                    key={s.id}
-                    className="flex items-center justify-between py-3"
-                    style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-                  >
-                    <div>
-                      <p className="text-white/70 text-sm font-medium">{s.workoutName}</p>
-                      <p className="text-white/25 text-xs mt-0.5">{relativeDate(s.date)}</p>
+              <div className="flex flex-col gap-1.5">
+                {sessions.slice(0, 20).map((s) => {
+                  const sessionAccent = TYPE_COLOR[workoutTypeMap.get(s.workoutId) ?? 'hiit']
+                  return (
+                    <div
+                      key={s.id}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}
+                    >
+                      <div
+                        className="self-stretch w-[3px] rounded-full shrink-0"
+                        style={{ backgroundColor: sessionAccent + '70' }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white/70 text-sm font-medium truncate">{s.workoutName}</p>
+                        <p className="text-white/25 text-xs mt-0.5">{relativeDate(s.date)}</p>
+                      </div>
+                      <span className="text-white/30 text-sm tabular-nums shrink-0">{fmtDuration(s.durationSeconds)}</span>
                     </div>
-                    <span className="text-white/30 text-sm tabular-nums">{fmtDuration(s.durationSeconds)}</span>
-                  </div>
-                ))}
+                  )
+                })}
                 <button
                   onClick={() => { if (window.confirm('Clear all history?')) clearHistory() }}
-                  className="mt-4 text-white/20 text-xs hover:text-white/40 transition-colors"
+                  className="mt-2 text-white/20 text-xs hover:text-white/40 transition-colors"
                 >
                   Clear history
                 </button>
