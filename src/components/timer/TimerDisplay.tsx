@@ -139,10 +139,22 @@ export function TimerDisplay({ workout }: Props) {
   )
 
   return (
-    <div className="@container flex flex-col h-[100dvh] select-none" style={{ backgroundColor: '#12121a' }}>
+    <div className="@container flex flex-col h-[100dvh] select-none relative overflow-hidden" style={{ backgroundColor: '#12121a' }}>
+
+      {/* Ambient phase glow — fills top of screen in current phase color */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: timer.isComplete
+            ? 'radial-gradient(ellipse 100% 50% at 50% 0%, rgba(251,191,36,0.12) 0%, transparent 70%)'
+            : `radial-gradient(ellipse 100% 50% at 50% 0%, ${color}18 0%, transparent 68%)`,
+          transition: 'background 0.8s ease',
+          zIndex: 0,
+        }}
+      />
 
       {/* Top bar */}
-      <div className="shrink-0 flex items-center justify-between px-5 @[600px]:px-8"
+      <div className="shrink-0 flex items-center justify-between px-5 @[600px]:px-8 relative z-10"
         style={{ paddingTop: 'max(env(safe-area-inset-top), 18px)', paddingBottom: 10 }}>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowQuitConfirm(true)}
@@ -185,7 +197,7 @@ export function TimerDisplay({ workout }: Props) {
       </div>
 
       {/* Main: single column → two column at 600px container width */}
-      <div className="flex-1 min-h-0 flex flex-col @[600px]:flex-row">
+      <div className="flex-1 min-h-0 flex flex-col @[600px]:flex-row relative z-10">
 
         {/* Ring — flex-1 so it expands to fill available space, ring centers within */}
         <div className="flex-1 flex items-center justify-start pt-6 px-6 @[600px]:justify-center @[600px]:pt-0">

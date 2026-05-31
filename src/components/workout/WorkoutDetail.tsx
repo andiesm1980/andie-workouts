@@ -78,10 +78,22 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
   const tabs: Tab[] = workout.type === 'circuit' ? ['timer', 'exercises'] : ['timer']
 
   return (
-    <div className="flex flex-col h-full" style={{ backgroundColor: '#12121a', minHeight: onClose ? undefined : '100dvh' }}>
+    <div className="flex flex-col h-full relative overflow-hidden" style={{ backgroundColor: '#12121a', minHeight: onClose ? undefined : '100dvh' }}>
+
+      {/* Accent glow behind header */}
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          top: 0, left: 0, right: 0,
+          height: '50%',
+          background: `radial-gradient(ellipse 80% 60% at 20% 20%, ${accent}16 0%, transparent 65%)`,
+          zIndex: 0,
+        }}
+      />
+
       {/* Header */}
       <div
-        className="shrink-0 px-5"
+        className="shrink-0 px-5 relative z-10"
         style={{ paddingTop: onClose ? 20 : 'max(env(safe-area-inset-top), 20px)' }}
       >
         <div className="flex items-center gap-3 mb-4">
@@ -165,6 +177,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
               style={{
                 backgroundColor: workout.type === t ? accent : 'transparent',
                 color: workout.type === t ? accentText(accent) : 'rgba(255,255,255,0.35)',
+                boxShadow: workout.type === t ? `0 2px 14px ${accent}60` : 'none',
               }}
             >
               {t === 'hiit' ? 'HIIT' : 'Circuit'}
@@ -191,30 +204,46 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
       </div>
 
       {/* Tab content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto relative z-10">
         {activeTab === 'timer' ? (
           <TimerSettingsTab workout={workout} onChange={update} />
         ) : (
           <ExercisesTab workout={workout} onChange={update} />
         )}
+        {/* Scroll fade into footer */}
+        <div
+          className="sticky bottom-0 h-10 pointer-events-none"
+          style={{ background: 'linear-gradient(to top, #12121a, transparent)' }}
+        />
       </div>
 
       {/* Notes */}
-      <div className="shrink-0 px-5 pb-2">
+      <div className="shrink-0 px-5 pb-3 pt-1 relative z-10">
         <textarea
           value={workout.notes ?? ''}
           onChange={(e) => update({ notes: e.target.value })}
           placeholder="Notes…"
           rows={2}
-          className="w-full bg-transparent text-white/50 text-sm resize-none focus:outline-none placeholder-white/20 leading-relaxed focus:text-white/70 transition-colors"
-          style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+          className="w-full text-white/50 text-sm resize-none focus:outline-none leading-relaxed focus:text-white/70 transition-colors px-4 py-3 rounded-2xl"
+          style={{
+            backgroundColor: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            caretColor: accent,
+          }}
           onFocus={(e) => { (e.target as HTMLTextAreaElement).rows = 4 }}
           onBlur={(e) => { (e.target as HTMLTextAreaElement).rows = 2 }}
         />
       </div>
 
-      {/* Start button */}
-      <div className="shrink-0 px-5 pt-3" style={{ paddingBottom: onClose ? 24 : 'max(env(safe-area-inset-bottom), 24px)' }}>
+      {/* Start button with upward accent bloom */}
+      <div
+        className="shrink-0 px-5 pt-2 relative z-10"
+        style={{ paddingBottom: onClose ? 24 : 'max(env(safe-area-inset-bottom), 24px)' }}
+      >
+        <div
+          className="absolute inset-x-5 bottom-full h-16 pointer-events-none rounded-b-none"
+          style={{ background: `linear-gradient(to top, ${accent}18 0%, transparent 100%)` }}
+        />
         <button
           onClick={() => router.push(`/timer/${workout.id}`)}
           className="w-full py-4 rounded-2xl font-semibold text-base transition-all active:scale-98"
