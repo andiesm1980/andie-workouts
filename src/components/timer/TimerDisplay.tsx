@@ -68,10 +68,7 @@ export function TimerDisplay({ workout }: Props) {
 
   const handleToggle = () => { initAudio(); haptic('tap'); timer.toggle() }
   const toggleSound = () => storeSoundEnabled(!soundEnabled)
-  const handleSkipNext = () => {
-    haptic('tap')
-    timer.skipToNext()
-  }
+  const handleSkipNext = () => { haptic('tap'); timer.skipToNext() }
   const handleSkipPrev = () => { haptic('tap'); timer.skipToPrev() }
   const handleQuit = () => { timer.reset(); router.push('/') }
 
@@ -145,7 +142,7 @@ export function TimerDisplay({ workout }: Props) {
   )
 
   return (
-    <div className="@container flex flex-col h-[100dvh] select-none" style={{ backgroundColor: '#0c0c0f' }}>
+    <div className="@container flex flex-col h-[100dvh] select-none" style={{ backgroundColor: '#12121a' }}>
 
       {/* Top bar */}
       <div className="shrink-0 flex items-center justify-between px-5 @[600px]:px-8"
@@ -188,16 +185,16 @@ export function TimerDisplay({ workout }: Props) {
       {/* Main: single column → two column at 600px container width */}
       <div className="flex-1 min-h-0 flex flex-col @[600px]:flex-row">
 
-        {/* Left / Top: ring */}
-        <div className="flex items-center justify-center px-6 pt-4 pb-2 @[600px]:flex-1 @[600px]:pt-0 @[600px]:pb-0">
+        {/* Ring — flex-1 so it expands to fill available space, ring centers within */}
+        <div className="flex-1 flex items-center justify-center px-6 @[600px]:pt-0 @[600px]:pb-0">
           {timer.isComplete ? completeRing : activeRing}
         </div>
 
-        {/* Right / Bottom: phase info + controls */}
-        <div className="flex flex-col @[600px]:flex-1 @[600px]:justify-center">
+        {/* Phase info + controls — shrink-0 so they pin to the bottom */}
+        <div className="shrink-0 flex flex-col @[600px]:flex-1 @[600px]:justify-center">
 
           {/* Info */}
-          <div className="text-center @[600px]:text-left px-6 @[600px]:px-10 mb-2 @[600px]:mb-6">
+          <div className="text-center @[600px]:text-left px-6 @[600px]:px-10 mb-4 @[600px]:mb-6">
             {timer.isComplete ? (
               <>
                 <p className="text-white text-xl font-semibold mb-4">Workout complete</p>
@@ -218,15 +215,14 @@ export function TimerDisplay({ workout }: Props) {
             ) : (
               <>
                 <p className="text-xs font-semibold tracking-widest uppercase mb-2 transition-colors duration-500" style={{ color }}>{label}</p>
+
                 {timer.phase === 'work' && workout.type === 'circuit' ? (
                   <p className="text-white text-3xl font-semibold leading-snug">{timer.exerciseName}</p>
                 ) : timer.phase === 'work' ? (
                   <p className="text-white/40 text-base font-light">Interval</p>
                 ) : timer.phase === 'rest' ? (
                   <p className="text-white/40 text-base font-light">{showCounters ? `Round ${timer.currentRound} of ${timer.totalRounds}` : 'Recover'}</p>
-                ) : (
-                  <p className="text-white/40 text-base font-light">{label}</p>
-                )}
+                ) : null}
 
                 {/* Circuit exercise list */}
                 {workout.type === 'circuit' && currentGroupExercises.length > 1 && (
@@ -249,7 +245,7 @@ export function TimerDisplay({ workout }: Props) {
                   </div>
                 )}
 
-                {/* Next up (when no exercise list) */}
+                {/* Next up */}
                 {!(workout.type === 'circuit' && currentGroupExercises.length > 1) && timer.segmentIndex < timer.segments.length - 1 && (
                   <p className="text-white/20 text-xs mt-2">
                     Next — <span className="text-white/35">{timer.segments[timer.segmentIndex + 1].label} · {formatTime(timer.segments[timer.segmentIndex + 1].duration)}</span>
@@ -260,8 +256,8 @@ export function TimerDisplay({ workout }: Props) {
           </div>
 
           {/* Controls */}
-          <div className="shrink-0 px-6 @[600px]:px-10 pt-2 @[600px]:pt-0"
-            style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 20px)' }}>
+          <div className="shrink-0 px-6 @[600px]:px-10"
+            style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 28px)' }}>
             {timer.isComplete ? (
               <div className="flex gap-3">
                 <button onClick={timer.reset}
@@ -281,8 +277,12 @@ export function TimerDisplay({ workout }: Props) {
                     <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" /></svg>
                   </button>
                   <button onClick={handleToggle}
-                    className="rounded-full flex items-center justify-center transition-all active:scale-95 shadow-lg"
-                    style={{ backgroundColor: color, width: 70, height: 70 }}>
+                    className="rounded-full flex items-center justify-center transition-all active:scale-95"
+                    style={{
+                      backgroundColor: color,
+                      width: 70, height: 70,
+                      boxShadow: `0 0 32px ${color}70`,
+                    }}>
                     {timer.isRunning ? (
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="#0a0a14">
                         <rect x="5" y="4" width="4" height="16" rx="1.5" /><rect x="15" y="4" width="4" height="16" rx="1.5" />
@@ -295,10 +295,21 @@ export function TimerDisplay({ workout }: Props) {
                     <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6h2v12h-2z" /></svg>
                   </button>
                 </div>
-                <div className="flex items-center justify-between px-1 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                  <span className="text-white/30 text-xs tabular-nums w-12">{formatTime(elapsed)}</span>
-                  <span className="text-xs font-semibold tracking-widest uppercase" style={{ color }}>{label}</span>
-                  <span className="text-white/30 text-xs tabular-nums w-12 text-right">{formatTime(workoutRemaining)}</span>
+
+                {/* Progress bar footer */}
+                <div className="flex items-center gap-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <span className="text-white/30 text-xs tabular-nums shrink-0 w-10">{formatTime(elapsed)}</span>
+                  <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${overallProgress * 100}%`,
+                        backgroundColor: color,
+                        transition: 'width 1s linear, background-color 0.5s ease',
+                      }}
+                    />
+                  </div>
+                  <span className="text-white/30 text-xs tabular-nums shrink-0 w-10 text-right">{formatTime(workoutRemaining)}</span>
                 </div>
               </>
             )}
@@ -309,7 +320,7 @@ export function TimerDisplay({ workout }: Props) {
       {/* Quit confirm sheet */}
       {showQuitConfirm && (
         <div className="fixed inset-0 z-50 flex items-end" style={{ backgroundColor: 'rgba(0,0,0,0.55)' }} onClick={() => setShowQuitConfirm(false)}>
-          <div className="w-full rounded-t-3xl px-6 pt-5" style={{ backgroundColor: '#13131a', paddingBottom: 'max(env(safe-area-inset-bottom), 28px)' }} onClick={(e) => e.stopPropagation()}>
+          <div className="w-full rounded-t-3xl px-6 pt-5" style={{ backgroundColor: '#1a1a26', paddingBottom: 'max(env(safe-area-inset-bottom), 28px)' }} onClick={(e) => e.stopPropagation()}>
             <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} />
             <p className="text-white text-lg font-semibold text-center mb-1">Quit workout?</p>
             <p className="text-white/35 text-sm text-center mb-6">Your progress will be lost.</p>
