@@ -150,8 +150,8 @@ export function TimerDisplay({ workout }: Props) {
         <div className="flex items-center gap-2">
           <button onClick={() => setShowQuitConfirm(true)}
             className="w-9 h-9 flex items-center justify-center rounded-full transition-colors active:scale-90"
-            style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} aria-label="Close">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2.5" strokeLinecap="round">
+            style={{ backgroundColor: 'rgba(239,68,68,0.14)' }} aria-label="Close">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(248,113,113,0.8)" strokeWidth="2.5" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
@@ -172,12 +172,17 @@ export function TimerDisplay({ workout }: Props) {
           </button>
         </div>
         <span className="text-white/30 text-sm truncate max-w-[160px] @[600px]:max-w-xs">{workout.name}</span>
-        <div className="text-right min-w-[48px]">
+        <div className="min-w-[48px] flex flex-col items-end gap-1">
           {showCounters && workout.type === 'circuit' && timer.totalGroups > 1 && (
-            <p className="text-white/55 text-sm font-semibold leading-tight tabular-nums">{timer.currentGroup}/{timer.totalGroups}</p>
+            <span className="text-white/55 text-sm font-semibold tabular-nums leading-tight">{timer.currentGroup}/{timer.totalGroups}</span>
           )}
           {showCounters && (
-            <p className="text-white/35 text-xs leading-tight tabular-nums">{timer.currentRound}/{timer.totalRounds}</p>
+            <span
+              className="text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full"
+              style={{ backgroundColor: `${color}28`, color }}
+            >
+              {timer.currentRound}/{timer.totalRounds}
+            </span>
           )}
         </div>
       </div>
@@ -219,7 +224,7 @@ export function TimerDisplay({ workout }: Props) {
                 {timer.phase === 'work' && workout.type === 'circuit' ? (
                   <p className="text-white text-3xl font-semibold leading-snug">{timer.exerciseName}</p>
                 ) : timer.phase === 'work' ? (
-                  <p className="text-white/40 text-base font-light">Interval</p>
+                  <p className="text-white/40 text-base font-light">{showCounters ? `Round ${timer.currentRound} of ${timer.totalRounds}` : 'Interval'}</p>
                 ) : timer.phase === 'rest' ? (
                   <p className="text-white/40 text-base font-light">{showCounters ? `Round ${timer.currentRound} of ${timer.totalRounds}` : 'Recover'}</p>
                 ) : null}
@@ -247,8 +252,8 @@ export function TimerDisplay({ workout }: Props) {
 
                 {/* Next up */}
                 {!(workout.type === 'circuit' && currentGroupExercises.length > 1) && timer.segmentIndex < timer.segments.length - 1 && (
-                  <p className="text-white/20 text-xs mt-2">
-                    Next — <span className="text-white/35">{timer.segments[timer.segmentIndex + 1].label} · {formatTime(timer.segments[timer.segmentIndex + 1].duration)}</span>
+                  <p className="text-white/35 text-xs mt-2">
+                    Next — <span className="text-white/55">{timer.segments[timer.segmentIndex + 1].label} · {formatTime(timer.segments[timer.segmentIndex + 1].duration)}</span>
                   </p>
                 )}
               </>
@@ -266,7 +271,7 @@ export function TimerDisplay({ workout }: Props) {
                 </button>
                 <button onClick={() => router.push('/')}
                   className="flex-1 py-4 rounded-2xl font-semibold text-sm transition-colors"
-                  style={{ backgroundColor: '#fbbf24', color: '#0a0a14' }}>
+                  style={{ backgroundColor: '#fbbf24', color: '#0a0a14', boxShadow: '0 6px 24px rgba(251,191,36,0.45)' }}>
                   Done
                 </button>
               </div>
@@ -277,7 +282,7 @@ export function TimerDisplay({ workout }: Props) {
                     <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" /></svg>
                   </button>
                   <button onClick={handleToggle}
-                    className="rounded-full flex items-center justify-center transition-all active:scale-95"
+                    className={`rounded-full flex items-center justify-center transition-all active:scale-95${timer.phase === 'idle' ? ' animate-pulse' : ''}`}
                     style={{
                       backgroundColor: color,
                       width: 70, height: 70,
@@ -291,8 +296,8 @@ export function TimerDisplay({ workout }: Props) {
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="#0a0a14"><path d="M6 4l14 8-14 8V4z" /></svg>
                     )}
                   </button>
-                  <button onClick={handleSkipNext} className="transition-all active:scale-90" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                    <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6h2v12h-2z" /></svg>
+                  <button onClick={handleSkipNext} className="transition-all active:scale-90" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                    <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6h2v12h-2z" /></svg>
                   </button>
                 </div>
 
