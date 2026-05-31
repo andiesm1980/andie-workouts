@@ -116,14 +116,11 @@ export function TimerDisplay({ workout }: Props) {
           strokeDasharray={CIRCUMFERENCE} strokeDashoffset={dashOffset} transform="rotate(-90 100 100)"
           style={{ transition: 'stroke-dashoffset 0.9s linear, stroke 0.5s ease', filter: `drop-shadow(0 0 9px ${color}cc)` }} />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+      <div className="absolute inset-0 flex items-center justify-center">
         <p key={timer.timeRemaining} className="text-white font-light tabular-nums"
           style={{ fontSize: 'clamp(34px, 10.5vw, 52px)', fontVariantNumeric: 'tabular-nums', letterSpacing: '-1px', animation: 'timeStep 0.22s ease-out' }}>
           {formatTime(timer.timeRemaining)}
         </p>
-        {isSkippable && (
-          <p className="text-white/20 text-xs">tap to skip</p>
-        )}
       </div>
     </div>
   )
@@ -191,7 +188,7 @@ export function TimerDisplay({ workout }: Props) {
       <div className="flex-1 min-h-0 flex flex-col @[600px]:flex-row">
 
         {/* Ring — flex-1 so it expands to fill available space, ring centers within */}
-        <div className="flex-1 flex items-center justify-center px-6 @[600px]:pt-0 @[600px]:pb-0">
+        <div className="flex-1 flex items-center justify-start pt-6 px-6 @[600px]:justify-center @[600px]:pt-0">
           {timer.isComplete ? completeRing : activeRing}
         </div>
 
@@ -199,7 +196,7 @@ export function TimerDisplay({ workout }: Props) {
         <div className="shrink-0 flex flex-col @[600px]:flex-1 @[600px]:justify-center">
 
           {/* Info */}
-          <div className="text-center @[600px]:text-left px-6 @[600px]:px-10 mb-4 @[600px]:mb-6">
+          <div className="text-center @[600px]:text-left px-6 @[600px]:px-10 mb-8 @[600px]:mb-6">
             {timer.isComplete ? (
               <>
                 <p className="text-white text-xl font-semibold mb-4">Workout complete</p>
