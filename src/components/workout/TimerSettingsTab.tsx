@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import type { Workout } from '@/types/workout'
 import { StepInput } from './StepInput'
-import { IntervalPreview } from './IntervalPreview'
 
 interface Props {
   workout: Workout
@@ -55,8 +54,6 @@ export function TimerSettingsTab({ workout, onChange }: Props) {
           ))}
         </div>
       </div>
-
-      <IntervalPreview workout={workout} />
 
       <Row label="Work">
         <StepInput value={workout.workTime} onChange={(v) => onChange({ workTime: v })}
