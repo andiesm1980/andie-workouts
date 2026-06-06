@@ -52,9 +52,20 @@ export default function HomePage() {
   const router = useRouter()
   const { workouts, sessions, addWorkout, deleteWorkout, clearHistory, moveWorkout, setSessions, reminderDays, lastBackupAt, reminderSnoozedAt, setReminderDays, setLastBackupAt, setReminderSnoozedAt } = useWorkoutStore()
   const drive = useDrive()
+  const readyToSave = useRef(false)
 
-  // Auto-save to GitHub whenever workouts or sessions change
+  // On startup, load from GitHub before enabling auto-save
   useEffect(() => {
+    if (!drive.isConnected) { readyToSave.current = true; return }
+    drive.loadNow().then((data) => {
+      if (data) { moveWorkout(data.workouts); setSessions(data.sessions) }
+    }).catch(() => {}).finally(() => { readyToSave.current = true })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Auto-save to GitHub whenever workouts or sessions change (skip initial mount)
+  useEffect(() => {
+    if (!readyToSave.current) return
     drive.scheduleSave({ workouts, sessions })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workouts, sessions])

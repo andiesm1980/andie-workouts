@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import type { Workout, ExerciseGroup, Exercise } from '@/types/workout'
 import { generateId } from '@/lib/workoutUtils'
 import { useDrag } from '@/hooks/useDrag'
@@ -25,7 +25,13 @@ function DragDots({ small }: { small?: boolean }) {
 }
 
 interface ExDragState { groupId: string; exId: string; fromIdx: number }
+interface ExDropTarget { groupId: string; idx: number }
 interface GroupDragState { fromIdx: number }
+
+function isExDropNoop(drag: ExDragState, drop: ExDropTarget): boolean {
+  return drop.groupId === drag.groupId &&
+    (drop.idx === drag.fromIdx || drop.idx === drag.fromIdx + 1)
+}
 
 export function ExercisesTab({ workout, onChange }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -37,37 +43,95 @@ export function ExercisesTab({ workout, onChange }: Props) {
   const groupEls = useRef<Map<string, HTMLElement>>(new Map())
 
   const groups = workout.exerciseGroups ?? []
+  const groupsRef = useRef(groups)
+  groupsRef.current = groups
 
   const updateGroups = useCallback((next: ExerciseGroup[]) => onChange({ exerciseGroups: next }), [onChange])
+  const updateGroupsRef = useRef(updateGroups)
+  updateGroupsRef.current = updateGroups
 
   const updateGroup = useCallback((groupId: string, exercises: Exercise[]) => {
     onChange({ exerciseGroups: (workout.exerciseGroups ?? []).map((g) => (g.id === groupId ? { ...g, exercises } : g)) })
   }, [workout.exerciseGroups, onChange])
 
-  // Exercise drag-to-reorder
-  const exDrag = useDrag<ExDragState>(
-    (drag, drop) => {
-      const group = (workout.exerciseGroups ?? []).find((g) => g.id === drag.groupId)
-      if (!group) return
-      const newExs = [...(group.exercises ?? [])]
-      const [moved] = newExs.splice(drag.fromIdx, 1)
-      newExs.splice(drop > drag.fromIdx ? drop - 1 : drop, 0, moved)
-      updateGroup(drag.groupId, newExs)
-    },
-    (y, drag) => {
-      const group = (workout.exerciseGroups ?? []).find((g) => g.id === drag.groupId)
-      if (!group) return drag.fromIdx
-      const exes = group.exercises ?? []
-      let target = exes.length
-      for (let i = 0; i < exes.length; i++) {
-        const el = rowEls.current.get(exes[i].id)
+  // Cross-group exercise drag
+  const [exDragActive, setExDragActive] = useState<ExDragState | null>(null)
+  const [exDropTarget, setExDropTarget] = useState<ExDropTarget | null>(null)
+  const exDragActiveRef = useRef<ExDragState | null>(null)
+  const exDropTargetRef = useRef<ExDropTarget | null>(null)
+
+  useEffect(() => {
+    if (!exDragActive) return
+
+    const computeTarget = (y: number): ExDropTarget | null => {
+      const currentGroups = groupsRef.current
+      if (!currentGroups.length) return null
+
+      // Find which group the pointer is in, or the nearest one
+      let bestGroupId: string | null = null
+      let bestDist = Infinity
+      for (const group of currentGroups) {
+        const el = groupEls.current.get(group.id)
         if (!el) continue
         const rect = el.getBoundingClientRect()
-        if (y < rect.top + rect.height / 2) { target = i; break }
+        if (y >= rect.top && y <= rect.bottom) { bestGroupId = group.id; break }
+        const dist = y < rect.top ? rect.top - y : y - rect.bottom
+        if (dist < bestDist) { bestDist = dist; bestGroupId = group.id }
       }
-      return target
+      if (!bestGroupId) return null
+
+      const group = currentGroups.find((g) => g.id === bestGroupId)!
+      let target = group.exercises.length
+      for (let i = 0; i < group.exercises.length; i++) {
+        const el = rowEls.current.get(group.exercises[i].id)
+        if (!el) continue
+        if (y < el.getBoundingClientRect().top + el.getBoundingClientRect().height / 2) { target = i; break }
+      }
+      return { groupId: bestGroupId, idx: target }
     }
-  )
+
+    const move = (e: PointerEvent) => {
+      e.preventDefault()
+      const t = computeTarget(e.clientY)
+      if (t) { setExDropTarget(t); exDropTargetRef.current = t }
+    }
+
+    const up = () => {
+      const drag = exDragActiveRef.current
+      const drop = exDropTargetRef.current
+      if (drag && drop && !isExDropNoop(drag, drop)) {
+        const newGroups = groupsRef.current.map((g) => ({ ...g, exercises: [...g.exercises] }))
+        const src = newGroups.find((g) => g.id === drag.groupId)
+        const dst = newGroups.find((g) => g.id === drop.groupId)
+        if (src && dst) {
+          const [moved] = src.exercises.splice(drag.fromIdx, 1)
+          const isSame = drop.groupId === drag.groupId
+          const insertIdx = isSame && drop.idx > drag.fromIdx ? drop.idx - 1 : drop.idx
+          dst.exercises.splice(insertIdx, 0, moved)
+          updateGroupsRef.current(newGroups)
+        }
+      }
+      setExDragActive(null); exDragActiveRef.current = null
+      setExDropTarget(null); exDropTargetRef.current = null
+    }
+
+    window.addEventListener('pointermove', move, { passive: false })
+    window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', up)
+    return () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', up)
+    }
+  }, [exDragActive]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const startExDrag = (e: React.PointerEvent, groupId: string, exId: string, fromIdx: number) => {
+    e.preventDefault()
+    const state: ExDragState = { groupId, exId, fromIdx }
+    setExDragActive(state); exDragActiveRef.current = state
+    const initial: ExDropTarget = { groupId, idx: fromIdx }
+    setExDropTarget(initial); exDropTargetRef.current = initial
+  }
 
   // Superset drag-to-reorder
   const groupDrag = useDrag<GroupDragState>(
@@ -125,7 +189,7 @@ export function ExercisesTab({ workout, onChange }: Props) {
     setEditingId(null)
   }
 
-  const isDraggingAny = !!exDrag.active || !!groupDrag.active
+  const isDraggingAny = !!exDragActive || !!groupDrag.active
 
   return (
     <div className="px-5 pb-8" style={{ userSelect: isDraggingAny ? 'none' : undefined }}>
@@ -138,7 +202,6 @@ export function ExercisesTab({ workout, onChange }: Props) {
         const showGroupDropAbove = groupDrag.active !== null &&
           groupDrag.dropTarget === gIdx &&
           !(groupDrag.dropTarget === groupDrag.active.fromIdx || groupDrag.dropTarget === groupDrag.active.fromIdx + 1)
-        const isDraggingExInThisGroup = exDrag.active?.groupId === group.id
 
         return (
           <div
@@ -154,7 +217,6 @@ export function ExercisesTab({ workout, onChange }: Props) {
 
             {/* Superset header */}
             <div className="flex items-center gap-2 mb-1 pt-5">
-              {/* Superset drag handle */}
               <div
                 onPointerDown={(e) => groupDrag.start(e, { fromIdx: gIdx })}
                 style={{ cursor: groupDrag.active ? 'grabbing' : 'grab', touchAction: 'none' }}
@@ -185,9 +247,11 @@ export function ExercisesTab({ workout, onChange }: Props) {
             )}
 
             {group.exercises.map((ex, exIdx) => {
-              const isDragging = exDrag.active?.exId === ex.id
-              const showDropAbove = isDraggingExInThisGroup && exDrag.dropTarget === exIdx &&
-                !(exDrag.dropTarget === exDrag.active?.fromIdx || exDrag.dropTarget === exDrag.active!.fromIdx + 1)
+              const isDragging = exDragActive?.exId === ex.id
+              const showDropAbove = exDragActive !== null &&
+                exDropTarget?.groupId === group.id &&
+                exDropTarget?.idx === exIdx &&
+                !isExDropNoop(exDragActive, exDropTarget)
               const hasCustomWork = ex.workTime !== undefined
               const hasCustomRest = ex.restTime !== undefined
               const isLastEx = exIdx === group.exercises.length - 1
@@ -213,8 +277,8 @@ export function ExercisesTab({ workout, onChange }: Props) {
                     style={{ opacity: isDragging ? 0.3 : 1, transition: isDragging ? 'none' : 'opacity 0.15s' }}
                   >
                     <div
-                      onPointerDown={(e) => exDrag.start(e, { groupId: group.id, exId: ex.id, fromIdx: exIdx })}
-                      style={{ cursor: exDrag.active ? 'grabbing' : 'grab', touchAction: 'none' }}
+                      onPointerDown={(e) => startExDrag(e, group.id, ex.id, exIdx)}
+                      style={{ cursor: exDragActive ? 'grabbing' : 'grab', touchAction: 'none' }}
                       className="shrink-0"
                     >
                       <DragDots />
@@ -340,7 +404,10 @@ export function ExercisesTab({ workout, onChange }: Props) {
             })}
 
             {/* Drop indicator at end of exercise list */}
-            {isDraggingExInThisGroup && exDrag.dropTarget === group.exercises.length && (
+            {exDragActive !== null &&
+              exDropTarget?.groupId === group.id &&
+              exDropTarget?.idx === group.exercises.length &&
+              !isExDropNoop(exDragActive, exDropTarget) && (
               <div style={{ height: 2, backgroundColor: '#4e8fff', borderRadius: 1, margin: '2px 0' }} />
             )}
 
