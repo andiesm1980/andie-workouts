@@ -78,6 +78,8 @@ export function WorkoutCard({ workout, onSelect, selected, onDelete, onDragHandl
 
   const isAnimating = !swipe.current
 
+  const typeLabel = workout.type === 'hiit' ? 'HIIT' : 'Circuit'
+
   return (
     <div
       className="relative overflow-hidden rounded-xl"
@@ -146,6 +148,7 @@ export function WorkoutCard({ workout, onSelect, selected, onDelete, onDragHandl
           className="flex flex-1 items-center gap-3 cursor-pointer min-w-0"
         >
           <div className="flex-1 min-w-0">
+            {/* Name row */}
             <div className="flex items-center gap-1.5 min-w-0">
               <p className="text-white font-medium text-base truncate leading-snug">{workout.name}</p>
               {workout.pinned && (
@@ -154,26 +157,45 @@ export function WorkoutCard({ workout, onSelect, selected, onDelete, onDragHandl
                 </svg>
               )}
             </div>
-            {workout.type === 'hiit' && (
-              <p className="text-white/25 text-xs mt-0.5 truncate">
-                {workout.rounds} rounds · {workout.workTime}s / {workout.restTime}s
-              </p>
-            )}
-            {workout.type === 'circuit' && exCount !== null && exCount > 0 && (
-              <p className="text-white/25 text-xs mt-0.5 truncate">
-                {exCount} exercise{exCount !== 1 ? 's' : ''}
-              </p>
-            )}
+
+            {/* Detail row — always shown; badge + duration join it on mobile */}
+            <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+              {/* Type badge: mobile only */}
+              <span
+                className="sm:hidden text-[11px] font-semibold px-1.5 py-px rounded shrink-0"
+                style={{ backgroundColor: accent + '18', color: accent }}
+              >
+                {typeLabel}
+              </span>
+
+              {workout.type === 'hiit' && (
+                <span className="text-white/25 text-xs truncate">
+                  {workout.rounds} rounds · {workout.workTime}s / {workout.restTime}s
+                </span>
+              )}
+              {workout.type === 'circuit' && exCount !== null && exCount > 0 && (
+                <span className="text-white/25 text-xs truncate">
+                  {exCount} exercise{exCount !== 1 ? 's' : ''}
+                </span>
+              )}
+
+              {/* Duration: mobile only */}
+              <span className="sm:hidden text-white/30 text-xs tabular-nums ml-auto shrink-0">
+                {formatDuration(total)}
+              </span>
+            </div>
           </div>
 
+          {/* Type badge: desktop only */}
           <span
-            className="text-xs font-semibold px-2 py-0.5 rounded-md shrink-0"
+            className="hidden sm:inline text-xs font-semibold px-2 py-0.5 rounded-md shrink-0"
             style={{ backgroundColor: accent + '18', color: accent }}
           >
-            {workout.type === 'hiit' ? 'HIIT' : 'Circuit'}
+            {typeLabel}
           </span>
 
-          <span className="text-white/30 text-sm tabular-nums shrink-0 min-w-[44px] text-right">
+          {/* Duration: desktop only */}
+          <span className="hidden sm:inline text-white/30 text-sm tabular-nums shrink-0 min-w-[44px] text-right">
             {formatDuration(total)}
           </span>
 
