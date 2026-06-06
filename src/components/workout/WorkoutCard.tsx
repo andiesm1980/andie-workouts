@@ -158,7 +158,7 @@ export function WorkoutCard({ workout, onSelect, selected, onDelete, onDragHandl
               )}
             </div>
 
-            {/* Detail row — always shown; badge + duration join it on mobile */}
+            {/* Detail row */}
             <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
               {/* Type badge: mobile only */}
               <span
@@ -168,20 +168,25 @@ export function WorkoutCard({ workout, onSelect, selected, onDelete, onDragHandl
                 {typeLabel}
               </span>
 
+              {/* Desktop-only detail text */}
               {workout.type === 'hiit' && (
-                <span className="text-white/25 text-xs truncate">
+                <span className="hidden sm:inline text-white/25 text-xs truncate">
                   {workout.rounds} rounds · {workout.workTime}s / {workout.restTime}s
                 </span>
               )}
               {workout.type === 'circuit' && exCount !== null && exCount > 0 && (
-                <span className="text-white/25 text-xs truncate">
+                <span className="hidden sm:inline text-white/25 text-xs truncate">
                   {exCount} exercise{exCount !== 1 ? 's' : ''}
                 </span>
               )}
 
-              {/* Duration: mobile only */}
-              <span className="sm:hidden text-white/30 text-xs tabular-nums ml-auto shrink-0">
-                {formatDuration(total)}
+              {/* Mobile-only: exercises · duration in one muted string */}
+              <span className="sm:hidden text-white/25 text-xs truncate">
+                {workout.type === 'hiit'
+                  ? `${workout.rounds} rounds · ${workout.workTime}s / ${workout.restTime}s · ${formatDuration(total)}`
+                  : exCount !== null && exCount > 0
+                    ? `${exCount} exercise${exCount !== 1 ? 's' : ''} · ${formatDuration(total)}`
+                    : formatDuration(total)}
               </span>
             </div>
           </div>
