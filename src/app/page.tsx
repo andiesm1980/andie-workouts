@@ -79,6 +79,25 @@ export default function HomePage() {
   const [importMsg, setImportMsg] = useState<string | null>(null)
   const importInputRef = useRef<HTMLInputElement>(null)
 
+  const handleDeduplicate = () => {
+    const seen = new Map<string, typeof workouts[0]>()
+    workouts.forEach((w) => {
+      const key = w.name.trim().toLowerCase()
+      const existing = seen.get(key)
+      if (!existing || w.createdAt < existing.createdAt) seen.set(key, w)
+    })
+    const deduped = workouts.filter((w) => seen.get(w.name.trim().toLowerCase())?.id === w.id)
+    const removed = workouts.length - deduped.length
+    if (removed > 0) {
+      moveWorkout(deduped)
+      setImportMsg(`Removed ${removed} duplicate${removed !== 1 ? 's' : ''}`)
+    } else {
+      setImportMsg('No duplicates found')
+    }
+    setTimeout(() => setImportMsg(null), 3000)
+    setShowOverflow(false)
+  }
+
   // Reminder is due when more than reminderDays have passed since the last
   // real backup OR the last snooze (✕ dismiss), whichever is more recent.
   const baseTime = Math.max(lastBackupAt, reminderSnoozedAt)
@@ -132,10 +151,11 @@ export default function HomePage() {
     try {
       const imported = await parseImportFile(file)
       const existingIds = new Set(workouts.map((w) => w.id))
+      const existingNames = new Set(workouts.map((w) => w.name.trim().toLowerCase()))
       let count = 0
       imported.forEach((w) => {
-        const workout = existingIds.has(w.id) ? { ...w, id: generateId() } : w
-        addWorkout(workout)
+        if (existingIds.has(w.id) || existingNames.has(w.name.trim().toLowerCase())) return
+        addWorkout(w)
         count++
       })
       setImportMsg(`${count} workout${count !== 1 ? 's' : ''} imported`)
@@ -521,6 +541,22 @@ export default function HomePage() {
                 </svg>
               </div>
               <span className="text-base" style={{ color: 'rgba(255,255,255,0.8)' }}>Import workouts</span>
+            </button>
+
+            {/* Deduplicate */}
+            <button
+              onClick={handleDeduplicate}
+              className="flex items-center gap-4 w-full px-2 py-3.5 rounded-2xl transition-colors active:bg-white/5"
+            >
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  <line x1="17" y1="13" x2="17" y2="19" />
+                  <line x1="14" y1="16" x2="20" y2="16" />
+                </svg>
+              </div>
+              <span className="text-base" style={{ color: 'rgba(255,255,255,0.8)' }}>Remove duplicates</span>
             </button>
 
             {/* Settings */}
