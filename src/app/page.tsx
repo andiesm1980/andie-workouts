@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
+import { useState, useMemo, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWorkoutStore } from '@/store/workoutStore'
 import { WorkoutCard } from '@/components/workout/WorkoutCard'
@@ -52,23 +52,6 @@ export default function HomePage() {
   const router = useRouter()
   const { workouts, sessions, addWorkout, deleteWorkout, clearHistory, moveWorkout, setSessions, reminderDays, lastBackupAt, reminderSnoozedAt, setReminderDays, setLastBackupAt, setReminderSnoozedAt } = useWorkoutStore()
   const drive = useDrive()
-  const readyToSave = useRef(false)
-
-  // On startup, load from GitHub before enabling auto-save
-  useEffect(() => {
-    if (!drive.isConnected) { readyToSave.current = true; return }
-    drive.loadNow().then((data) => {
-      if (data) { moveWorkout(data.workouts); setSessions(data.sessions) }
-    }).catch(() => {}).finally(() => { readyToSave.current = true })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // Auto-save to GitHub whenever workouts or sessions change (skip initial mount)
-  useEffect(() => {
-    if (!readyToSave.current) return
-    drive.scheduleSave({ workouts, sessions })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workouts, sessions])
   const [showPicker, setShowPicker] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
