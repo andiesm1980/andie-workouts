@@ -127,13 +127,18 @@ export function TimerDisplay({ workout }: Props) {
 
   const completeRing = (
     <div className="relative flex items-center justify-center">
-      <svg viewBox="0 0 200 200" className="w-[52vw] max-w-[210px] @[600px]:w-[min(36vh,240px)] @[600px]:max-w-none">
-        <circle cx="100" cy="100" r={RADIUS} fill="none" stroke="rgba(250,204,21,0.15)" strokeWidth="10" />
+      <svg viewBox="0 0 200 200" className="w-[82vw] max-w-[340px] @[600px]:w-[min(52vh,360px)] @[600px]:max-w-none">
+        <circle cx="100" cy="100" r={OUTER_RADIUS} fill="none" stroke="rgba(251,191,36,0.08)" strokeWidth="2.5" />
+        <circle cx="100" cy="100" r={RADIUS} fill="none" stroke="rgba(251,191,36,0.12)" strokeWidth="10" />
         <circle cx="100" cy="100" r={RADIUS} fill="none" stroke="#fbbf24" strokeWidth="10" strokeLinecap="round"
-          strokeDasharray={CIRCUMFERENCE} strokeDashoffset={0} transform="rotate(-90 100 100)" />
+          strokeDasharray={CIRCUMFERENCE} strokeDashoffset={0} transform="rotate(-90 100 100)"
+          style={{ filter: 'drop-shadow(0 0 14px rgba(251,191,36,0.65))' }} />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span style={{ fontSize: 'clamp(34px, 10vw, 48px)' }}>🎉</span>
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          style={{ filter: 'drop-shadow(0 0 8px rgba(251,191,36,0.7))' }}>
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
       </div>
     </div>
   )
@@ -211,17 +216,19 @@ export function TimerDisplay({ workout }: Props) {
           <div className="text-center @[600px]:text-left px-6 @[600px]:px-10 mb-8 @[600px]:mb-6">
             {timer.isComplete ? (
               <>
-                <p className="text-white text-xl font-semibold mb-4">Workout complete</p>
-                <div className="flex gap-3 flex-wrap @[600px]:justify-start justify-center">
+                <p className="text-white font-bold text-2xl mb-1">Workout complete!</p>
+                <p className="text-white/35 text-sm mb-5 truncate">{workout.name}</p>
+                <div className="grid grid-cols-2 gap-2.5 @[600px]:justify-start">
                   {[
                     { label: 'Duration', value: formatDuration(allSegsDur) },
-                    { label: 'Work', value: formatDuration(totalWorkDur) },
+                    { label: 'Active work', value: formatDuration(totalWorkDur) },
                     { label: 'Rounds', value: String(timer.totalRounds) },
                     { label: completionStatLabel, value: String(completionExCount) },
                   ].map(({ label, value }) => (
-                    <div key={label} className="flex flex-col items-center px-3 py-2.5 rounded-2xl" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
-                      <span className="text-white font-semibold text-base tabular-nums">{value}</span>
-                      <span className="text-white/30 text-xs mt-0.5">{label}</span>
+                    <div key={label} className="flex flex-col items-center px-3 py-3 rounded-2xl"
+                      style={{ backgroundColor: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.13)' }}>
+                      <span className="text-white font-bold text-lg tabular-nums">{value}</span>
+                      <span className="text-white/40 text-[11px] mt-0.5 uppercase tracking-wide">{label}</span>
                     </div>
                   ))}
                 </div>

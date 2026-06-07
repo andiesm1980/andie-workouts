@@ -27,17 +27,34 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
+  const [isDirty, setIsDirty] = useState(false)
+  const [showUnsaved, setShowUnsaved] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
   const cancelEditRef = useRef(false)
+  const initialRef = useRef<Workout>(initial)
 
   const accent = workout.accentColor ?? '#f0407a'
+
   const goBack = () => onClose ? onClose() : router.push('/')
+
+  const handleBack = () => {
+    if (isDirty) { setShowUnsaved(true) } else { goBack() }
+  }
+
+  const handleSave = () => { setIsDirty(false); goBack() }
+
+  const handleDiscard = () => {
+    updateWorkout(initialRef.current.id, initialRef.current)
+    setIsDirty(false)
+    goBack()
+  }
 
   const update = useCallback(
     (updates: Partial<Workout>) => {
       const next = { ...workout, ...updates }
       setWorkout(next)
       updateWorkout(next.id, updates)
+      setIsDirty(true)
     },
     [workout, updateWorkout]
   )
@@ -99,7 +116,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
         <div className="flex items-center gap-3 mb-4">
           {/* Back / Close */}
           <button
-            onClick={goBack}
+            onClick={handleBack}
             className="shrink-0 text-white/40 hover:text-white/70 transition-colors p-1 -ml-1"
             aria-label={onClose ? 'Close' : 'Back'}
           >
@@ -150,6 +167,20 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
           {/* Share copied toast */}
           {shareCopied && (
             <span className="text-xs shrink-0 transition-opacity" style={{ color: '#00d9a0' }}>Copied!</span>
+          )}
+
+          {/* Save button — visible when there are unsaved changes */}
+          {isDirty && (
+            <button
+              onClick={handleSave}
+              className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90"
+              style={{ backgroundColor: accent + '28', color: accent }}
+              aria-label="Save"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </button>
           )}
 
           {/* ⋯ menu */}
@@ -332,6 +363,46 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
                 </svg>
               </div>
               <span className="text-base" style={{ color: '#f87171' }}>Delete workout</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Unsaved changes sheet */}
+      {showUnsaved && (
+        <div
+          className="fixed inset-0 z-50 flex items-end"
+          style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
+          onClick={() => setShowUnsaved(false)}
+        >
+          <div
+            className="w-full rounded-t-3xl px-6 pt-5"
+            style={{ backgroundColor: '#1a1a26', paddingBottom: 'max(env(safe-area-inset-bottom), 28px)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} />
+            <p className="text-white text-lg font-semibold text-center mb-1">Unsaved changes</p>
+            <p className="text-white/35 text-sm text-center mb-6">Do you want to save your changes to this workout?</p>
+            <button
+              onClick={handleSave}
+              className="w-full py-4 rounded-2xl font-semibold text-sm mb-3 transition-all active:scale-98"
+              style={{ backgroundColor: accent, color: '#fff' }}
+            >
+              Save changes
+            </button>
+            <button
+              onClick={handleDiscard}
+              className="w-full py-3.5 rounded-2xl font-medium text-sm mb-2 transition-all active:scale-98"
+              style={{ backgroundColor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}
+            >
+              Discard changes
+            </button>
+            <button
+              onClick={() => setShowUnsaved(false)}
+              className="w-full py-3 text-sm transition-colors"
+              style={{ color: 'rgba(255,255,255,0.3)' }}
+            >
+              Keep editing
             </button>
           </div>
         </div>

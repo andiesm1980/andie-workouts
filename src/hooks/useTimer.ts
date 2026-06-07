@@ -96,27 +96,44 @@ export function useTimer(workout: Workout) {
   const segmentsRef = useRef(segments)
   segmentsRef.current = segments
 
-  // Timestamp when the current segment should end. Set whenever the timer
-  // starts/resumes or a new segment begins. Used by tick() so the countdown
-  // stays accurate even if JS is throttled while the app is backgrounded.
+  // Wall-clock timestamp when the current segment ends. Anchored to the
+  // previous segment's end (not Date.now()) so segments never accumulate drift.
   const endAtRef = useRef<number>(0)
-  // Tracks which countdown second already had its beep, preventing double-fire
-  // on 500ms ticks when both ticks land on the same displayed second.
-  const lastBeepRef = useRef<number>(-1)
+
+  // setTimeout IDs for the 3-2-1 countdown beeps, scheduled precisely
+  // relative to endAtRef so they fire exactly when the second changes.
+  const beepTimers = useRef<ReturnType<typeof setTimeout>[]>([])
+
+  const clearBeeps = useCallback(() => {
+    beepTimers.current.forEach(clearTimeout)
+    beepTimers.current = []
+  }, [])
+
+  const scheduleBeeps = useCallback((endAt: number) => {
+    clearBeeps()
+    const nowMs = Date.now()
+    beepTimers.current = [3, 2, 1].flatMap((sec) => {
+      const delay = endAt - nowMs - sec * 1000
+      if (delay < 0) return []
+      return [setTimeout(() => { playCountdownBeep(); haptic('countdown') }, delay)]
+    })
+  }, [clearBeeps])
 
   const advanceSegment = useCallback((fromIndex: number, segs: Segment[]) => {
     const nextIndex = fromIndex + 1
     if (nextIndex >= segs.length) {
+      clearBeeps()
       setState((s) => ({ ...s, isRunning: false, isComplete: true, timeRemaining: 0 }))
       playComplete(); haptic('complete')
     } else {
       const dur = segs[nextIndex].duration
-      endAtRef.current = Date.now() + dur * 1000
-      lastBeepRef.current = -1
+      // Anchor to previous endAt to prevent drift accumulation across segments
+      endAtRef.current = endAtRef.current + dur * 1000
+      scheduleBeeps(endAtRef.current)
       playPhaseStart(); haptic('phase')
       setState((s) => ({ ...s, segmentIndex: nextIndex, timeRemaining: dur }))
     }
-  }, [])
+  }, [clearBeeps, scheduleBeeps])
 
   const tick = useCallback(() => {
     const { segmentIndex, isRunning, isComplete } = stateRef.current
@@ -124,11 +141,6 @@ export function useTimer(workout: Workout) {
     if (!isRunning || isComplete) return
 
     const remaining = Math.max(0, Math.ceil((endAtRef.current - Date.now()) / 1000))
-
-    if (remaining > 0 && remaining <= 3 && remaining !== lastBeepRef.current) {
-      lastBeepRef.current = remaining
-      playCountdownBeep(); haptic('countdown')
-    }
 
     if (remaining > 0) {
       setState((s) => ({ ...s, timeRemaining: remaining }))
@@ -147,50 +159,62 @@ export function useTimer(workout: Workout) {
   }, [state.isRunning])
 
   const start = useCallback(() => {
-    endAtRef.current = Date.now() + stateRef.current.timeRemaining * 1000
-    lastBeepRef.current = -1
+    const endAt = Date.now() + stateRef.current.timeRemaining * 1000
+    endAtRef.current = endAt
+    scheduleBeeps(endAt)
     setState((s) => ({ ...s, isRunning: true }))
-  }, [])
+  }, [scheduleBeeps])
 
-  const pause = useCallback(() => setState((s) => ({ ...s, isRunning: false })), [])
+  const pause = useCallback(() => {
+    clearBeeps()
+    setState((s) => ({ ...s, isRunning: false }))
+  }, [clearBeeps])
 
   const toggle = useCallback(() => {
     const s = stateRef.current
-    if (!s.isRunning) {
-      endAtRef.current = Date.now() + s.timeRemaining * 1000
-      lastBeepRef.current = -1
+    if (s.isRunning) {
+      clearBeeps()
+      setState((prev) => ({ ...prev, isRunning: false }))
+    } else {
+      const endAt = Date.now() + s.timeRemaining * 1000
+      endAtRef.current = endAt
+      scheduleBeeps(endAt)
+      setState((prev) => ({ ...prev, isRunning: true }))
     }
-    setState((prev) => ({ ...prev, isRunning: !prev.isRunning }))
-  }, [])
+  }, [clearBeeps, scheduleBeeps])
 
   const reset = useCallback(() => {
+    clearBeeps()
     endAtRef.current = 0
-    lastBeepRef.current = -1
     setState({ segmentIndex: 0, timeRemaining: segmentsRef.current[0]?.duration ?? 0, isRunning: false, isComplete: false })
-  }, [])
+  }, [clearBeeps])
 
   const skipToNext = useCallback(() => {
+    clearBeeps()
     advanceSegment(stateRef.current.segmentIndex, segmentsRef.current)
-  }, [advanceSegment])
+  }, [advanceSegment, clearBeeps])
 
   const skipToPrev = useCallback(() => {
+    clearBeeps()
     const { segmentIndex, timeRemaining } = stateRef.current
     const segs = segmentsRef.current
     const currentDuration = segs[segmentIndex]?.duration ?? 0
     const elapsed = currentDuration - timeRemaining
     if (elapsed > 2 || segmentIndex === 0) {
-      endAtRef.current = Date.now() + currentDuration * 1000
-      lastBeepRef.current = -1
+      const endAt = Date.now() + currentDuration * 1000
+      endAtRef.current = endAt
+      scheduleBeeps(endAt)
       setState((s) => ({ ...s, timeRemaining: currentDuration }))
     } else {
       const prevIndex = segmentIndex - 1
       const dur = segs[prevIndex].duration
-      endAtRef.current = Date.now() + dur * 1000
-      lastBeepRef.current = -1
+      const endAt = Date.now() + dur * 1000
+      endAtRef.current = endAt
+      scheduleBeeps(endAt)
       playPhaseStart()
       setState((s) => ({ ...s, segmentIndex: prevIndex, timeRemaining: dur }))
     }
-  }, [])
+  }, [clearBeeps, scheduleBeeps])
 
   const currentSegment = segments[state.segmentIndex]
   const totalDuration = currentSegment?.duration ?? 1
