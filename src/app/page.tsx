@@ -617,7 +617,7 @@ export default function HomePage() {
                 </div>
                 <button
                   onClick={() => {
-                    const t = localStorage.getItem('gh_token') ?? ''
+                    const t = localStorage.getItem('wk_gh_token') ?? ''
                     navigator.clipboard.writeText(t).then(() => {
                       setTokenCopied(true)
                       setTimeout(() => setTokenCopied(false), 2000)
