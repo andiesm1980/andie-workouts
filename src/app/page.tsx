@@ -60,6 +60,7 @@ export default function HomePage() {
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
+  const [tokenCopied, setTokenCopied] = useState(false)
   const importInputRef = useRef<HTMLInputElement>(null)
 
   const handleDeduplicate = () => {
@@ -614,6 +615,18 @@ export default function HomePage() {
                     </button>
                   </div>
                 </div>
+                <button
+                  onClick={() => {
+                    const t = localStorage.getItem('gh_token') ?? ''
+                    navigator.clipboard.writeText(t).then(() => {
+                      setTokenCopied(true)
+                      setTimeout(() => setTokenCopied(false), 2000)
+                    })
+                  }}
+                  className="text-xs text-white/35 hover:text-white/60 transition-colors text-left mt-2"
+                >
+                  {tokenCopied ? '✓ Token copied!' : 'Copy GitHub token'}
+                </button>
                 {drive.error && <p className="text-xs mt-2" style={{ color: '#f0407a' }}>{drive.error}</p>}
               </div>
             ) : (
