@@ -191,6 +191,7 @@ export function useTimer(workout: Workout) {
 
   const skipToNext = useCallback(() => {
     clearBeeps()
+    endAtRef.current = Date.now() // anchor to now so next segment isn't inflated by remaining time
     advanceSegment(stateRef.current.segmentIndex, segmentsRef.current)
   }, [advanceSegment, clearBeeps])
 
