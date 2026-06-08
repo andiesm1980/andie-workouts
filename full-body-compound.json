@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "workouts": [
+    {
+      "id": "custom-full-body-compound-001",
+      "name": "Full Body Compound",
+      "type": "circuit",
+      "workTime": 45,
+      "restTime": 15,
+      "intervals": 1,
+      "rounds": 3,
+      "cycleBreak": 90,
+      "warmup": 60,
+      "cooldown": 60,
+      "accentColor": "#f97316",
+      "notes": "Full body compound circuit. 45% legs · 28% upper body · 28% core. ~46 min total.\n\nGroup 1 — Legs: quads · hamstrings · glutes · calves · adductors · hip flexors\nGroup 2 — Upper: chest · lats · shoulders · biceps · triceps\nGroup 3 — Core: rectus abdominis · obliques · transverse abdominis · hip flexors\n\n90 s break between groups.",
+      "exerciseGroups": [
+        {
+          "id": "fbc-g1-legs",
+          "exercises": [
+            { "id": "fbc-e1", "name": "Goblet Squats" },
+            { "id": "fbc-e2", "name": "Romanian Deadlifts" },
+            { "id": "fbc-e3", "name": "Sumo Squat + Calf Raise" },
+            { "id": "fbc-e4", "name": "Reverse Lunges (alternating)" },
+            { "id": "fbc-e5", "name": "Hip Thrusts" },
+            { "id": "fbc-e6", "name": "Jump Squats" }
+          ]
+        },
+        {
+          "id": "fbc-g2-upper",
+          "exercises": [
+            { "id": "fbc-e7",  "name": "Push-up to T-Rotation" },
+            { "id": "fbc-e8",  "name": "Bent-over Row" },
+            { "id": "fbc-e9",  "name": "Overhead Press" },
+            { "id": "fbc-e10", "name": "Renegade Row" }
+          ]
+        },
+        {
+          "id": "fbc-g3-core",
+          "exercises": [
+            { "id": "fbc-e11", "name": "Mountain Climbers" },
+            { "id": "fbc-e12", "name": "Bicycle Crunches" },
+            { "id": "fbc-e13", "name": "Plank Up-Downs" },
+            { "id": "fbc-e14", "name": "Leg Raises" }
+          ]
+        }
+      ],
+      "createdAt": 1749340800000
+    }
+  ]
+}
