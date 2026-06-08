@@ -205,7 +205,7 @@ export function TimerDisplay({ workout }: Props) {
       <div className="flex-1 min-h-0 flex flex-col @[600px]:flex-row relative z-10">
 
         {/* Ring — flex-1 so it expands to fill available space, ring centers within */}
-        <div className="flex-1 flex items-center justify-start pt-6 px-6 @[600px]:justify-center @[600px]:pt-0">
+        <div className="flex-1 flex items-center justify-center pt-6 px-6 @[600px]:pt-0">
           {timer.isComplete ? completeRing : activeRing}
         </div>
 
@@ -241,6 +241,8 @@ export function TimerDisplay({ workout }: Props) {
                   <p className="text-white text-3xl font-semibold leading-snug">{timer.exerciseName}</p>
                 ) : timer.phase === 'work' ? (
                   <p className="text-white/40 text-base font-light">{showCounters ? `Round ${timer.currentRound} of ${timer.totalRounds}` : 'Interval'}</p>
+                ) : timer.phase === 'rest' && workout.type === 'circuit' && timer.segments[timer.segmentIndex + 1]?.phase === 'work' ? (
+                  <p className="text-white text-3xl font-semibold leading-snug">Next: {timer.segments[timer.segmentIndex + 1].label}</p>
                 ) : timer.phase === 'rest' ? (
                   <p className="text-white/40 text-base font-light">{showCounters ? `Round ${timer.currentRound} of ${timer.totalRounds}` : 'Recover'}</p>
                 ) : null}
