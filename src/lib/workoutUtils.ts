@@ -14,21 +14,24 @@ export function computeTotalTime(workout: Workout): number {
     groups.forEach((group, gIdx) => {
       const exercises = group.exercises ?? []
       const restTime = workout.restTime
+      const isLastGroup = gIdx === groups.length - 1
       const workPerSet = exercises.reduce((sum, ex) => sum + (ex.workTime ?? workout.workTime), 0)
-      // All rests including after last exercise (used as set transition for non-last sets)
       const allRests = exercises.reduce((sum, ex) => {
         const r = ex.restTime ?? restTime
         return sum + (r > 0 ? r : 0)
       }, 0)
-      // Last set: rest between exercises only (no rest after last exercise)
+      // Last set of last group only: no rest after the final exercise
       const lastSetRests = exercises.slice(0, -1).reduce((sum, ex) => {
         const r = ex.restTime ?? restTime
         return sum + (r > 0 ? r : 0)
       }, 0)
-      total += (rounds - 1) * (workPerSet + allRests) + (workPerSet + lastSetRests)
-      // Break after all sets of this superset (before next superset)
-      if (gIdx < groups.length - 1) {
-        total += cycleBreak
+
+      if (!isLastGroup) {
+        // Non-last group: every exercise in every round gets a rest; break fires between rounds
+        total += rounds * (workPerSet + allRests) + (rounds - 1) * cycleBreak
+      } else {
+        // Last group: breaks between rounds; last round has no rest after final exercise
+        total += (rounds - 1) * (workPerSet + allRests + cycleBreak) + (workPerSet + lastSetRests)
       }
     })
   }
