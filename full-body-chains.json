@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "workouts": [
+    {
+      "id": "custom-anterior-chain-001",
+      "name": "Day 1 — Anterior Chain",
+      "type": "circuit",
+      "workTime": 45,
+      "restTime": 15,
+      "intervals": 1,
+      "rounds": 3,
+      "cycleBreak": 90,
+      "warmup": 60,
+      "cooldown": 60,
+      "notes": "Full body anterior chain. 40% quads/hip flexors · 30% chest/shoulders/biceps · 20% core anterior.\n~50 min total.",
+      "exerciseGroups": [
+        {
+          "id": "ag1-legs",
+          "exercises": [
+            { "id": "ag1-e1", "name": "Bodyweight Squats" },
+            { "id": "ag1-e2", "name": "Jump Squats" },
+            { "id": "ag1-e3", "name": "Reverse Lunges (alternating)" },
+            { "id": "ag1-e4", "name": "Goblet Squats" },
+            { "id": "ag1-e5", "name": "Step-ups" },
+            { "id": "ag1-e6", "name": "Lateral Lunges" }
+          ]
+        },
+        {
+          "id": "ag2-upper",
+          "exercises": [
+            { "id": "ag2-e1", "name": "Push-ups" },
+            { "id": "ag2-e2", "name": "Overhead Press" },
+            { "id": "ag2-e3", "name": "Bicep Curls" },
+            { "id": "ag2-e4", "name": "Incline Push-ups" },
+            { "id": "ag2-e5", "name": "Front Raises" }
+          ]
+        },
+        {
+          "id": "ag3-core",
+          "exercises": [
+            { "id": "ag3-e1", "name": "Crunches" },
+            { "id": "ag3-e2", "name": "Leg Raises" },
+            { "id": "ag3-e3", "name": "Bicycle Crunches" },
+            { "id": "ag3-e4", "name": "Hollow Body Hold" }
+          ]
+        }
+      ],
+      "createdAt": 1749254400000
+    },
+    {
+      "id": "custom-posterior-chain-001",
+      "name": "Day 2 — Posterior Chain",
+      "type": "circuit",
+      "workTime": 45,
+      "restTime": 15,
+      "intervals": 1,
+      "rounds": 3,
+      "cycleBreak": 90,
+      "warmup": 60,
+      "cooldown": 60,
+      "notes": "Full body posterior chain. 40% hamstrings/glutes · 30% back/triceps/rear delts · 20% core posterior.\n~50 min total.",
+      "exerciseGroups": [
+        {
+          "id": "pg1-legs",
+          "exercises": [
+            { "id": "pg1-e1", "name": "Romanian Deadlifts" },
+            { "id": "pg1-e2", "name": "Glute Bridges" },
+            { "id": "pg1-e3", "name": "Hip Thrusts" },
+            { "id": "pg1-e4", "name": "Reverse Lunges" },
+            { "id": "pg1-e5", "name": "Floor Hamstring Curls" },
+            { "id": "pg1-e6", "name": "Sumo Squats" }
+          ]
+        },
+        {
+          "id": "pg2-upper",
+          "exercises": [
+            { "id": "pg2-e1", "name": "Bent-over Rows" },
+            { "id": "pg2-e2", "name": "Pull-ups" },
+            { "id": "pg2-e3", "name": "Tricep Dips" },
+            { "id": "pg2-e4", "name": "Rear Delt Flyes" },
+            { "id": "pg2-e5", "name": "Face Pulls (band)" }
+          ]
+        },
+        {
+          "id": "pg3-core",
+          "exercises": [
+            { "id": "pg3-e1", "name": "Plank Hold" },
+            { "id": "pg3-e2", "name": "Superman" },
+            { "id": "pg3-e3", "name": "Russian Twists" },
+            { "id": "pg3-e4", "name": "Dead Bug" }
+          ]
+        }
+      ],
+      "createdAt": 1749254401000
+    }
+  ]
+}
