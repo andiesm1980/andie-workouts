@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "workouts": [
+    {
+      "id": "strength-full-body-001",
+      "name": "Full Body Strength",
+      "type": "circuit",
+      "workTime": 45,
+      "restTime": 20,
+      "intervals": 1,
+      "rounds": 3,
+      "cycleBreak": 90,
+      "warmup": 60,
+      "cooldown": 60,
+      "accentColor": "#a87dff",
+      "notes": "Monday. 45% legs · 35% upper · 20% core. ~46 min. 90 s break between rounds.\n\nGroup 1 — Legs: quads · hamstrings · glutes · hip flexors · power\nGroup 2 — Upper (push + pull): chest · back · shoulders · biceps · triceps\nGroup 3 — Core: transverse abdominis · obliques",
+      "exerciseGroups": [
+        {
+          "id": "sfb-g1-legs",
+          "exercises": [
+            { "id": "sfb-e1", "name": "Goblet Squats" },
+            { "id": "sfb-e2", "name": "Romanian Deadlifts" },
+            { "id": "sfb-e3", "name": "Reverse Lunges" },
+            { "id": "sfb-e4", "name": "Hip Thrusts" },
+            { "id": "sfb-e5", "name": "Jump Squats" }
+          ]
+        },
+        {
+          "id": "sfb-g2-upper",
+          "exercises": [
+            { "id": "sfb-e6", "name": "Dumbbell Chest Press" },
+            { "id": "sfb-e7", "name": "Bent-over Row" },
+            { "id": "sfb-e8", "name": "Overhead Press" },
+            { "id": "sfb-e9", "name": "Renegade Row" }
+          ]
+        },
+        {
+          "id": "sfb-g3-core",
+          "exercises": [
+            { "id": "sfb-e10", "name": "Plank Up-Downs" },
+            { "id": "sfb-e11", "name": "Bicycle Crunches" }
+          ]
+        }
+      ],
+      "createdAt": 1749427200000
+    },
+    {
+      "id": "strength-legs-001",
+      "name": "Leg Day",
+      "type": "circuit",
+      "workTime": 45,
+      "restTime": 20,
+      "intervals": 1,
+      "rounds": 4,
+      "cycleBreak": 120,
+      "warmup": 60,
+      "cooldown": 60,
+      "accentColor": "#f0407a",
+      "notes": "Friday. Dedicated leg day — 4 rounds for hypertrophy volume. ~53 min. 2 min break between rounds.\n\nGroup 1 — Squat & hinge patterns: quads · hamstrings · glutes · adductors (bilateral)\nGroup 2 — Unilateral & power: glutes · hamstrings · balance · explosive calves",
+      "exerciseGroups": [
+        {
+          "id": "sld-g1-bilateral",
+          "exercises": [
+            { "id": "sld-e1", "name": "Goblet Squats" },
+            { "id": "sld-e2", "name": "Romanian Deadlifts" },
+            { "id": "sld-e3", "name": "Sumo Squats" },
+            { "id": "sld-e4", "name": "Lateral Lunges" },
+            { "id": "sld-e5", "name": "Reverse Lunges" }
+          ]
+        },
+        {
+          "id": "sld-g2-unilateral",
+          "exercises": [
+            { "id": "sld-e6", "name": "Bulgarian Split Squats" },
+            { "id": "sld-e7", "name": "Hip Thrusts" },
+            { "id": "sld-e8", "name": "Single-Leg Romanian Deadlift" },
+            { "id": "sld-e9", "name": "Jump Squats" }
+          ]
+        }
+      ],
+      "createdAt": 1749427200001
+    },
+    {
+      "id": "strength-push-core-001",
+      "name": "Push + Core",
+      "type": "circuit",
+      "workTime": 45,
+      "restTime": 20,
+      "intervals": 1,
+      "rounds": 4,
+      "cycleBreak": 90,
+      "warmup": 60,
+      "cooldown": 60,
+      "accentColor": "#4e8fff",
+      "notes": "Saturday or Sunday. Complements aerial pulling + full body day. ~50 min. 90 s break between rounds.\n\nGroup 1 — Push: chest · lateral/anterior deltoid · triceps\nGroup 2 — Core: rectus abdominis · obliques · hip flexors · deep core",
+      "exerciseGroups": [
+        {
+          "id": "spc-g1-push",
+          "exercises": [
+            { "id": "spc-e1", "name": "Push-ups" },
+            { "id": "spc-e2", "name": "Pike Push-ups" },
+            { "id": "spc-e3", "name": "Dumbbell Chest Press" },
+            { "id": "spc-e4", "name": "Overhead Press" },
+            { "id": "spc-e5", "name": "Tricep Dips" }
+          ]
+        },
+        {
+          "id": "spc-g2-core",
+          "exercises": [
+            { "id": "spc-e6", "name": "Mountain Climbers" },
+            { "id": "spc-e7", "name": "Bicycle Crunches" },
+            { "id": "spc-e8", "name": "Leg Raises" },
+            { "id": "spc-e9", "name": "Russian Twists" }
+          ]
+        }
+      ],
+      "createdAt": 1749427200002
+    }
+  ]
+}
