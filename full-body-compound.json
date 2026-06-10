@@ -13,7 +13,7 @@
       "warmup": 60,
       "cooldown": 60,
       "accentColor": "#f97316",
-      "notes": "Full body compound circuit. 45% legs · 28% upper body · 28% core. ~53 min total.\n\nGroup 1 — Legs: quads · hamstrings · glutes · calves · adductors · hip flexors\nGroup 2 — Upper: chest · lats · shoulders · biceps · triceps\nGroup 3 — Core: rectus abdominis · obliques · transverse abdominis · hip flexors\n\n90 s break between rounds within each group.",
+      "notes": "Full body compound circuit. 45% legs · 28% upper body · 28% core. ~47 min total.\n\nGroup 1 — Legs: quads · hamstrings · glutes · calves · adductors · hip flexors\nGroup 2 — Upper: chest · lats · shoulders · biceps · triceps\nGroup 3 — Core: rectus abdominis · obliques · transverse abdominis · hip flexors\n\n90 s break between rounds within each group.",
       "exerciseGroups": [
         {
           "id": "fbc-g1-legs",

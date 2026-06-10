@@ -13,7 +13,7 @@
       "warmup": 60,
       "cooldown": 60,
       "accentColor": "#a87dff",
-      "notes": "Monday. 45% legs · 35% upper · 20% core. ~46 min. 90 s break between rounds.\n\nGroup 1 — Legs: quads · hamstrings · glutes · hip flexors · power\nGroup 2 — Upper (push + pull): chest · back · shoulders · biceps · triceps\nGroup 3 — Core: transverse abdominis · obliques",
+      "notes": "Monday. 45% legs · 35% upper · 20% core. ~40 min. 90 s break after all rounds.\n\nGroup 1 — Legs: quads · hamstrings · glutes · hip flexors · power\nGroup 2 — Upper (push + pull): chest · back · shoulders · biceps · triceps\nGroup 3 — Core: transverse abdominis · obliques",
       "exerciseGroups": [
         {
           "id": "sfb-g1-legs",
@@ -56,7 +56,7 @@
       "warmup": 60,
       "cooldown": 60,
       "accentColor": "#f0407a",
-      "notes": "Friday. Dedicated leg day — 4 rounds for hypertrophy volume. ~53 min. 2 min break between rounds.\n\nGroup 1 — Squat & hinge patterns: quads · hamstrings · glutes · adductors (bilateral)\nGroup 2 — Unilateral & power: glutes · hamstrings · balance · explosive calves",
+      "notes": "Friday. Dedicated leg day — 4 rounds for hypertrophy volume. ~43 min. 2 min break after all rounds.\n\nGroup 1 — Squat & hinge patterns: quads · hamstrings · glutes · adductors (bilateral)\nGroup 2 — Unilateral & power: glutes · hamstrings · balance · explosive calves",
       "exerciseGroups": [
         {
           "id": "sld-g1-bilateral",
@@ -92,7 +92,7 @@
       "warmup": 60,
       "cooldown": 60,
       "accentColor": "#4e8fff",
-      "notes": "Saturday or Sunday. Complements aerial pulling + full body day. ~50 min. 90 s break between rounds.\n\nGroup 1 — Push: chest · lateral/anterior deltoid · triceps\nGroup 2 — Core: rectus abdominis · obliques · hip flexors · deep core",
+      "notes": "Saturday or Sunday. Complements aerial pulling + full body day. ~42 min. 90 s break after all rounds.\n\nGroup 1 — Push: chest · lateral/anterior deltoid · triceps\nGroup 2 — Core: rectus abdominis · obliques · hip flexors · deep core",
       "exerciseGroups": [
         {
           "id": "spc-g1-push",

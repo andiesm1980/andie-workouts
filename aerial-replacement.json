@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "workouts": [
+    {
+      "id": "aerial-replace-wed-001",
+      "name": "Aerial Skills Sub",
+      "type": "circuit",
+      "workTime": 45,
+      "restTime": 20,
+      "intervals": 1,
+      "rounds": 3,
+      "cycleBreak": 90,
+      "warmup": 60,
+      "cooldown": 60,
+      "accentColor": "#c084fc",
+      "notes": "Wednesday aerial class replacement. ~39 min. 90 s break after all rounds.\n\nGroup 1 — Pull & scapular strength: lats · biceps · rhomboids · rear deltoid · traps\nGroup 2 — Core & shoulder stability: body tension · anti-extension · overhead press · hip flexors",
+      "exerciseGroups": [
+        {
+          "id": "ar-g1-pull",
+          "exercises": [
+            { "id": "ar-e1", "name": "Bent-over Row" },
+            { "id": "ar-e2", "name": "Single-arm Dumbbell Row" },
+            { "id": "ar-e3", "name": "Reverse Flyes" },
+            { "id": "ar-e4", "name": "Bicep Curls" },
+            { "id": "ar-e5", "name": "Prone Y Raises" },
+            { "id": "ar-e6", "name": "Renegade Row" }
+          ]
+        },
+        {
+          "id": "ar-g2-core-shoulder",
+          "exercises": [
+            { "id": "ar-e7", "name": "Hollow Body Hold" },
+            { "id": "ar-e8", "name": "Dead Bug" },
+            { "id": "ar-e9", "name": "Plank Shoulder Taps" },
+            { "id": "ar-e10", "name": "Pike Push-ups" },
+            { "id": "ar-e11", "name": "Leg Raises" }
+          ]
+        }
+      ],
+      "createdAt": 1749513600000
+    }
+  ]
+}

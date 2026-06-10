@@ -47,7 +47,6 @@ export function buildSegments(workout: Workout): Segment[] {
 
       for (let set = 1; set <= rounds; set++) {
         const isLastSet = set === rounds
-        const isLastGroup = gIdx === groups.length - 1
         for (let exIdx = 0; exIdx < exCount; exIdx++) {
           const ex = group.exercises[exIdx]
           const isLastEx = exIdx === exCount - 1
@@ -60,10 +59,10 @@ export function buildSegments(workout: Workout): Segment[] {
             }
           }
         }
-        // Break between rounds (consistent with HIIT cycle break)
-        if (!isLastSet && cycleBreak > 0) {
-          segments.push({ phase: 'break', duration: cycleBreak, label: 'Break', round: set, exerciseIndex: 0, groupIndex: gIdx })
-        }
+      }
+      // Break once after all rounds are done, before the next group
+      if (!isLastGroup && cycleBreak > 0) {
+        segments.push({ phase: 'break', duration: cycleBreak, label: 'Break', round: rounds, exerciseIndex: 0, groupIndex: gIdx })
       }
     }
   }
