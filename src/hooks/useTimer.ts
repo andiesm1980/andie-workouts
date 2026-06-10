@@ -52,7 +52,7 @@ export function buildSegments(workout: Workout): Segment[] {
           const isLastEx = exIdx === exCount - 1
           const workDur = ex.workTime ?? workout.workTime
           segments.push({ phase: 'work', duration: workDur, label: ex.name, round: set, exerciseIndex: exIdx, groupIndex: gIdx })
-          if (!isLastEx || !isLastSet || !isLastGroup) {
+          if (!isLastEx || !isLastSet) {
             const restDur = ex.restTime ?? workout.restTime
             if (restDur > 0) {
               segments.push({ phase: 'rest', duration: restDur, label: 'Rest', round: set, exerciseIndex: exIdx, groupIndex: gIdx })

@@ -26,13 +26,9 @@ export function computeTotalTime(workout: Workout): number {
         return sum + (r > 0 ? r : 0)
       }, 0)
 
-      if (!isLastGroup) {
-        // Non-last group: all rounds flow with rest between exercises; one break after all rounds
-        total += rounds * (workPerSet + allRests) + cycleBreak
-      } else {
-        // Last group: all rounds flow with rest between exercises; last exercise of last round gets no rest
-        total += (rounds - 1) * (workPerSet + allRests) + (workPerSet + lastSetRests)
-      }
+      // Every group: last exercise of the last round gets no rest (BREAK or end follows directly)
+      const baseTime = (rounds - 1) * (workPerSet + allRests) + (workPerSet + lastSetRests)
+      total += isLastGroup ? baseTime : baseTime + cycleBreak
     })
   }
 
