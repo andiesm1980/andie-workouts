@@ -99,6 +99,9 @@ export function TimerDisplay({ workout }: Props) {
   const currentGroupExercises = workout.type === 'circuit'
     ? (workout.exerciseGroups ?? [])[timer.currentGroup - 1]?.exercises ?? []
     : []
+  const nextGroupExercises = workout.type === 'circuit'
+    ? (workout.exerciseGroups ?? [])[timer.currentGroup]?.exercises ?? []
+    : []
 
   const activeRing = (
     <div
@@ -245,10 +248,21 @@ export function TimerDisplay({ workout }: Props) {
                   <p className="text-white text-3xl font-semibold leading-snug">Next: {timer.segments[timer.segmentIndex + 1].label}</p>
                 ) : timer.phase === 'rest' ? (
                   <p className="text-white/40 text-base font-light">{showCounters ? `Round ${timer.currentRound} of ${timer.totalRounds}` : 'Recover'}</p>
+                ) : timer.phase === 'break' && workout.type === 'circuit' ? (
+                  <p className="text-white/55 text-base font-light">Next superset</p>
                 ) : null}
 
                 {/* Circuit exercise list */}
-                {workout.type === 'circuit' && currentGroupExercises.length > 1 && (
+                {workout.type === 'circuit' && timer.phase === 'break' && nextGroupExercises.length > 1 ? (
+                  <div className="mt-3 flex flex-col gap-0.5 @[600px]:text-left">
+                    {nextGroupExercises.map((ex) => (
+                      <div key={ex.id} className="flex items-center gap-2 py-0.5 px-2 rounded-lg -mx-2">
+                        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
+                        <span className="text-sm truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>{ex.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : workout.type === 'circuit' && currentGroupExercises.length > 1 ? (
                   <div className="mt-3 flex flex-col gap-0.5 @[600px]:text-left">
                     {currentGroupExercises.map((ex, i) => {
                       const isCurrent = i === timer.exerciseIndex && timer.phase === 'work'
@@ -266,10 +280,10 @@ export function TimerDisplay({ workout }: Props) {
                       )
                     })}
                   </div>
-                )}
+                ) : null}
 
                 {/* Next up */}
-                {!(workout.type === 'circuit' && currentGroupExercises.length > 1) && timer.segmentIndex < timer.segments.length - 1 && (
+                {!(workout.type === 'circuit' && (timer.phase === 'break' ? nextGroupExercises.length > 1 : currentGroupExercises.length > 1)) && timer.segmentIndex < timer.segments.length - 1 && (
                   <p className="text-white/35 text-xs mt-2">
                     Next — <span className="text-white/55">{timer.segments[timer.segmentIndex + 1].label} · {formatTime(timer.segments[timer.segmentIndex + 1].duration)}</span>
                   </p>
