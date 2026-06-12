@@ -72,6 +72,7 @@ interface WorkoutStore {
   reminderDays: number        // 0 = off, 7, 30, 90
   lastBackupAt: number        // ms timestamp of last real export
   reminderSnoozedAt: number   // ms timestamp of last dismiss (without export)
+  schedule: Record<string, string> // day key → workout id, e.g. { mon: 'workout-id-123' }
   addWorkout: (workout: Workout) => void
   updateWorkout: (id: string, updates: Partial<Workout>) => void
   deleteWorkout: (id: string) => void
@@ -84,6 +85,7 @@ interface WorkoutStore {
   setReminderDays: (days: number) => void
   setLastBackupAt: (ts: number) => void
   setReminderSnoozedAt: (ts: number) => void
+  setScheduleDay: (day: string, workoutId: string | null) => void
 }
 
 export const useWorkoutStore = create<WorkoutStore>()(
@@ -95,6 +97,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
       reminderDays: 30,
       lastBackupAt: 0,
       reminderSnoozedAt: 0,
+      schedule: {},
       addWorkout: (workout) =>
         set((state) => ({ workouts: [workout, ...state.workouts] })),
       updateWorkout: (id, updates) =>
@@ -132,12 +135,19 @@ export const useWorkoutStore = create<WorkoutStore>()(
       setReminderDays: (days) => set({ reminderDays: days }),
       setLastBackupAt: (ts) => set({ lastBackupAt: ts }),
       setReminderSnoozedAt: (ts) => set({ reminderSnoozedAt: ts }),
+      setScheduleDay: (day, workoutId) =>
+        set((state) => {
+          const next = { ...state.schedule }
+          if (workoutId === null) delete next[day]
+          else next[day] = workoutId
+          return { schedule: next }
+        }),
     }),
     {
       name: 'my-workouts-store',
-      version: 6,
+      version: 7,
       migrate: (persisted: unknown, fromVersion: number) => {
-        const state = persisted as { workouts: any[]; sessions?: any[]; soundEnabled?: boolean; reminderDays?: number; lastBackupAt?: number; reminderSnoozedAt?: number }
+        const state = persisted as { workouts: any[]; sessions?: any[]; soundEnabled?: boolean; reminderDays?: number; lastBackupAt?: number; reminderSnoozedAt?: number; schedule?: Record<string, string> }
 
         if (fromVersion < 2) {
           state.workouts = (state.workouts ?? []).map((w: any) => ({
@@ -176,6 +186,10 @@ export const useWorkoutStore = create<WorkoutStore>()(
 
         if (fromVersion < 6) {
           state.reminderSnoozedAt = state.reminderSnoozedAt ?? 0
+        }
+
+        if (fromVersion < 7) {
+          state.schedule = (state as any).schedule ?? {}
         }
 
         return state

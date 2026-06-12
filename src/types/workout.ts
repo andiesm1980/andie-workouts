@@ -6,6 +6,7 @@ export interface Exercise {
   name: string
   workTime?: number // overrides workout.workTime when set
   restTime?: number // overrides workout.restTime when set
+  notes?: string
 }
 
 export interface CompletedSession {
@@ -14,6 +15,7 @@ export interface CompletedSession {
   workoutName: string
   date: number        // timestamp ms
   durationSeconds: number
+  rounds?: number
 }
 
 export interface ExerciseGroup {

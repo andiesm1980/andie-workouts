@@ -36,9 +36,11 @@ function isExDropNoop(drag: ExDragState, drop: ExDropTarget): boolean {
 export function ExercisesTab({ workout, onChange }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingExtra, setEditingExtra] = useState<{ id: string; field: 'work' | 'rest' } | null>(null)
+  const [editingNotes, setEditingNotes] = useState<string | null>(null)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const extraInputRef = useRef<HTMLInputElement>(null)
+  const notesInputRef = useRef<HTMLInputElement>(null)
   const rowEls = useRef<Map<string, HTMLElement>>(new Map())
   const groupEls = useRef<Map<string, HTMLElement>>(new Map())
 
@@ -187,6 +189,7 @@ export function ExercisesTab({ workout, onChange }: Props) {
     if (!name.trim()) removeExercise(groupId, exId)
     else updateExercise(groupId, exId, { name: name.trim() })
     setEditingId(null)
+    setEditingNotes(null)
   }
 
   const isDraggingAny = !!exDragActive || !!groupDrag.active
@@ -260,7 +263,15 @@ export function ExercisesTab({ workout, onChange }: Props) {
 
               const openExtra = (field: 'work' | 'rest') => {
                 setEditingExtra({ id: ex.id, field })
+                setEditingNotes(null)
                 setTimeout(() => extraInputRef.current?.focus(), 50)
+              }
+
+              const openNotes = () => {
+                setEditingNotes(ex.id)
+                setEditingId(null)
+                setEditingExtra(null)
+                setTimeout(() => notesInputRef.current?.focus(), 50)
               }
 
               return (
@@ -300,7 +311,7 @@ export function ExercisesTab({ workout, onChange }: Props) {
                     ) : (
                       <button
                         className="flex-1 text-left text-white text-base hover:text-white/80 transition-colors min-w-0 truncate"
-                        onClick={() => setEditingId(ex.id)}
+                        onClick={() => { setEditingId(ex.id); setEditingNotes(null) }}
                       >
                         {ex.name || <span className="text-white/30 italic">Unnamed</span>}
                       </button>
@@ -315,6 +326,17 @@ export function ExercisesTab({ workout, onChange }: Props) {
                       }}
                     >
                       {hasCustomWork ? `${ex.workTime}s` : `${workout.workTime}s`}
+                    </button>
+
+                    <button
+                      onClick={openNotes}
+                      className="shrink-0 p-1 transition-colors"
+                      aria-label="Form cue"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+                        stroke={ex.notes ? '#f0407a' : 'rgba(255,255,255,0.2)'}>
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      </svg>
                     </button>
 
                     <button
@@ -353,6 +375,29 @@ export function ExercisesTab({ workout, onChange }: Props) {
                           onPointerDown={(e) => { e.preventDefault(); updateExercise(group.id, ex.id, { workTime: undefined }); setEditingExtra(null) }}
                           className="text-white/25 text-xs hover:text-white/50 transition-colors">reset</button>
                       )}
+                    </div>
+                  )}
+
+                  {editingNotes === ex.id && (
+                    <div className="flex items-center gap-3 pb-3 pl-10">
+                      <span className="text-white/30 text-xs">Form cue:</span>
+                      <input
+                        ref={notesInputRef}
+                        type="text"
+                        defaultValue={ex.notes ?? ''}
+                        placeholder="e.g. keep hips square"
+                        className="flex-1 bg-transparent text-white/70 text-sm focus:outline-none border-b border-white/20 pb-0.5"
+                        onBlur={(e) => {
+                          const val = e.target.value.trim()
+                          updateExercise(group.id, ex.id, { notes: val || undefined })
+                          setEditingNotes(null)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') e.currentTarget.blur()
+                          if (e.key === 'Escape') setEditingNotes(null)
+                        }}
+                        autoFocus
+                      />
                     </div>
                   )}
 

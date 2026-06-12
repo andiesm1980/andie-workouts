@@ -48,10 +48,23 @@ function newWorkout(type: WorkoutType): Workout {
   }
 }
 
+const DAYS = [
+  { key: 'mon', short: 'M', label: 'Mon' },
+  { key: 'tue', short: 'T', label: 'Tue' },
+  { key: 'wed', short: 'W', label: 'Wed' },
+  { key: 'thu', short: 'T', label: 'Thu' },
+  { key: 'fri', short: 'F', label: 'Fri' },
+  { key: 'sat', short: 'S', label: 'Sat' },
+  { key: 'sun', short: 'S', label: 'Sun' },
+]
+const JS_TO_KEY = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+
 export default function HomePage() {
   const router = useRouter()
-  const { workouts, sessions, addWorkout, deleteWorkout, clearHistory, moveWorkout, setSessions, reminderDays, lastBackupAt, reminderSnoozedAt, setReminderDays, setLastBackupAt, setReminderSnoozedAt } = useWorkoutStore()
+  const { workouts, sessions, addWorkout, deleteWorkout, clearHistory, moveWorkout, setSessions, reminderDays, lastBackupAt, reminderSnoozedAt, setReminderDays, setLastBackupAt, setReminderSnoozedAt, schedule, setScheduleDay } = useWorkoutStore()
   const drive = useDrive()
+  const todayKey = JS_TO_KEY[new Date().getDay()]
+  const [schedulingDay, setSchedulingDay] = useState<string | null>(null)
   const [showPicker, setShowPicker] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -272,6 +285,31 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* Week schedule strip */}
+      <div className="px-6 pt-4 pb-2">
+        <div className="flex justify-between">
+          {DAYS.map(({ key, short }) => {
+            const assignedId = schedule[key]
+            const assignedWorkout = assignedId ? workouts.find(w => w.id === assignedId) : null
+            const isToday = key === todayKey
+            return (
+              <button
+                key={key}
+                onClick={() => setSchedulingDay(key)}
+                className="flex flex-col items-center gap-1.5 py-1 px-1 rounded-xl transition-all"
+                style={{ minWidth: 36, backgroundColor: isToday ? 'rgba(255,255,255,0.05)' : 'transparent' }}
+              >
+                <span className="text-[10px] font-semibold" style={{ color: isToday ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)' }}>{short}</span>
+                <div
+                  className="w-2 h-2 rounded-full transition-colors"
+                  style={{ backgroundColor: assignedWorkout?.accentColor ?? (isToday ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)') }}
+                />
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
       <div className="h-px mx-6 shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
 
       {/* Scrollable list */}
@@ -303,7 +341,29 @@ export default function HomePage() {
         ) : filtered.length === 0 ? (
           <p className="text-white/30 text-sm py-10 text-center">No workouts match "{query}"</p>
         ) : (
-          filtered.map((workout, i) => {
+          <>
+            {(() => {
+              const todayWorkoutId = schedule[todayKey]
+              const todayWorkout = todayWorkoutId ? workouts.find(w => w.id === todayWorkoutId) : null
+              if (!todayWorkout) return null
+              return (
+                <button
+                  onClick={() => handleSelect(todayWorkout.id)}
+                  className="flex items-center gap-3 rounded-2xl px-4 py-3 mb-4 w-full text-left transition-all active:scale-98"
+                  style={{ backgroundColor: `${todayWorkout.accentColor ?? '#f0407a'}14`, border: `1px solid ${todayWorkout.accentColor ?? '#f0407a'}25` }}
+                >
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: todayWorkout.accentColor ?? '#f0407a' }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white/40 text-[10px] font-semibold tracking-widest uppercase">Today</p>
+                    <p className="text-white/80 text-sm font-medium truncate">{todayWorkout.name}</p>
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              )
+            })()}
+          {filtered.map((workout, i) => {
             const globalIdx = workouts.indexOf(workout)
             const isDragging = dragActive?.id === workout.id
             const canDrag = !query.trim()
@@ -326,7 +386,8 @@ export default function HomePage() {
                 </div>
               </div>
             )
-          })
+          })}
+          </>
         )}
         {!query.trim() && dropTarget === workouts.length && dragActive && (
           <div className="h-0.5 rounded-full mx-2 mt-1" style={{ backgroundColor: '#f0407a' }} />
@@ -360,7 +421,11 @@ export default function HomePage() {
                         <p className="text-white/70 text-sm font-medium truncate">{s.workoutName}</p>
                         <p className="text-white/25 text-xs mt-0.5">{relativeDate(s.date)}</p>
                       </div>
-                      <span className="text-white/30 text-sm tabular-nums shrink-0">{fmtDuration(s.durationSeconds)}</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-white/30 text-sm tabular-nums">{fmtDuration(s.durationSeconds)}</span>
+                        {s.rounds && <span className="text-white/20 text-xs">·</span>}
+                        {s.rounds && <span className="text-white/30 text-xs">{s.rounds}r</span>}
+                      </div>
                     </div>
                   )
                 })}
@@ -749,6 +814,47 @@ export default function HomePage() {
                   <p className="text-white/35 text-xs mt-0.5">Named exercises performed in sequence</p>
                 </div>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule assignment sheet */}
+      {schedulingDay && (
+        <div className="fixed inset-0 z-50 flex items-end" style={{ backgroundColor: 'rgba(0,0,0,0.55)' }} onClick={() => setSchedulingDay(null)}>
+          <div className="w-full rounded-t-3xl px-4 pt-4 max-h-[70vh] flex flex-col" style={{ backgroundColor: '#1a1a26', paddingBottom: 'max(env(safe-area-inset-bottom), 20px)' }} onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} />
+            <p className="text-white/50 text-xs font-semibold tracking-widest uppercase mb-3 px-2">
+              {DAYS.find(d => d.key === schedulingDay)?.label} workout
+            </p>
+            <div className="overflow-y-auto flex-1">
+              {schedule[schedulingDay] && (
+                <button
+                  onClick={() => { setScheduleDay(schedulingDay, null); setSchedulingDay(null) }}
+                  className="flex items-center gap-3 w-full px-2 py-3 rounded-2xl mb-2 transition-colors active:bg-white/5"
+                  style={{ color: 'rgba(239,68,68,0.7)' }}
+                >
+                  <span className="text-sm">Clear day</span>
+                </button>
+              )}
+              {workouts.map(w => {
+                const isAssigned = schedule[schedulingDay] === w.id
+                return (
+                  <button
+                    key={w.id}
+                    onClick={() => { setScheduleDay(schedulingDay, w.id); setSchedulingDay(null) }}
+                    className="flex items-center gap-3 w-full px-2 py-3.5 rounded-2xl transition-colors active:bg-white/5"
+                  >
+                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: w.accentColor ?? '#f0407a' }} />
+                    <span className="flex-1 text-left text-sm" style={{ color: isAssigned ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.65)' }}>{w.name}</span>
+                    {isAssigned && (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={w.accentColor ?? '#f0407a'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </button>
+                )
+              })}
             </div>
           </div>
         </div>

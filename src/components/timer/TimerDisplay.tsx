@@ -60,7 +60,7 @@ export function TimerDisplay({ workout }: Props) {
     if (timer.isComplete && !sessionRecorded.current) {
       sessionRecorded.current = true
       const total = timer.segments.reduce((s, seg) => s + seg.duration, 0)
-      recordSession({ workoutId: workout.id, workoutName: workout.name, date: Date.now(), durationSeconds: total })
+      recordSession({ workoutId: workout.id, workoutName: workout.name, date: Date.now(), durationSeconds: total, rounds: workout.rounds })
     }
   }, [timer.isComplete]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -102,6 +102,10 @@ export function TimerDisplay({ workout }: Props) {
   const nextGroupExercises = workout.type === 'circuit'
     ? (workout.exerciseGroups ?? [])[timer.currentGroup]?.exercises ?? []
     : []
+
+  // Display counters: during break, show the NEXT group/round (not the completed one)
+  const displayGroup = timer.phase === 'break' ? timer.currentGroup + 1 : timer.currentGroup
+  const displayRound = timer.phase === 'break' ? 1 : timer.currentRound
 
   const activeRing = (
     <div
@@ -191,14 +195,14 @@ export function TimerDisplay({ workout }: Props) {
         <span className="text-white/30 text-sm truncate max-w-[160px] @[600px]:max-w-xs">{workout.name}</span>
         <div className="min-w-[48px] flex flex-col items-end gap-1">
           {showCounters && workout.type === 'circuit' && timer.totalGroups > 1 && (
-            <span className="text-white/55 text-sm font-semibold tabular-nums leading-tight">{timer.currentGroup}/{timer.totalGroups}</span>
+            <span className="text-white/55 text-sm font-semibold tabular-nums leading-tight">{displayGroup}/{timer.totalGroups}</span>
           )}
           {showCounters && (
             <span
               className="text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full"
               style={{ backgroundColor: `${color}28`, color }}
             >
-              {timer.currentRound}/{timer.totalRounds}
+              {displayRound}/{timer.totalRounds}
             </span>
           )}
         </div>
@@ -208,8 +212,11 @@ export function TimerDisplay({ workout }: Props) {
       <div className="flex-1 min-h-0 flex flex-col @[600px]:flex-row relative z-10">
 
         {/* Ring — flex-1 so it expands to fill available space, ring centers within */}
-        <div className="flex-1 flex items-center justify-center pt-6 px-6 @[600px]:pt-0">
+        <div className="flex-1 flex flex-col items-center justify-center pt-6 px-6 @[600px]:pt-0">
           {timer.isComplete ? completeRing : activeRing}
+          {(timer.phase === 'rest' || timer.phase === 'break') && timer.isRunning && (
+            <p className="text-white/20 text-[11px] mt-2 text-center tracking-widest uppercase">tap ring to skip</p>
+          )}
         </div>
 
         {/* Phase info + controls — shrink-0 so they pin to the bottom */}
@@ -241,7 +248,12 @@ export function TimerDisplay({ workout }: Props) {
                 <p className="text-xs font-semibold tracking-widest uppercase mb-2 transition-colors duration-500" style={{ color }}>{label}</p>
 
                 {timer.phase === 'work' && workout.type === 'circuit' ? (
-                  <p className="text-white text-3xl font-semibold leading-snug">{timer.exerciseName}</p>
+                  <>
+                    <p className="text-white text-3xl font-semibold leading-snug">{timer.exerciseName}</p>
+                    {currentGroupExercises[timer.exerciseIndex]?.notes && (
+                      <p className="text-white/40 text-sm mt-1 italic leading-snug">{currentGroupExercises[timer.exerciseIndex].notes}</p>
+                    )}
+                  </>
                 ) : timer.phase === 'work' ? (
                   <p className="text-white/40 text-base font-light">{showCounters ? `Round ${timer.currentRound} of ${timer.totalRounds}` : 'Interval'}</p>
                 ) : timer.phase === 'rest' && workout.type === 'circuit' && timer.segments[timer.segmentIndex + 1]?.phase === 'work' ? (
@@ -249,7 +261,10 @@ export function TimerDisplay({ workout }: Props) {
                 ) : timer.phase === 'rest' ? (
                   <p className="text-white/40 text-base font-light">{showCounters ? `Round ${timer.currentRound} of ${timer.totalRounds}` : 'Recover'}</p>
                 ) : timer.phase === 'break' && workout.type === 'circuit' ? (
-                  <p className="text-white/55 text-base font-light">Next superset</p>
+                  <>
+                    <p className="text-white/55 text-base font-light">Next superset</p>
+                    <p className="text-white/30 text-xs mt-1">{workout.rounds} rounds · {workout.workTime}s work · {workout.restTime}s rest</p>
+                  </>
                 ) : null}
 
                 {/* Circuit exercise list */}
