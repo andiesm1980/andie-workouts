@@ -1,0 +1,338 @@
+{
+  "version": 1,
+  "workouts": [
+    {
+      "id": "wp-mon-fullbody-001",
+      "name": "Monday Full Body",
+      "type": "circuit",
+      "workTime": 45,
+      "restTime": 20,
+      "intervals": 1,
+      "rounds": 3,
+      "cycleBreak": 120,
+      "warmup": 60,
+      "cooldown": 60,
+      "accentColor": "#9333ea",
+      "notes": "Monday full body. Compound-first, legs-biased. 3 rounds · 45s work · 20s rest · 2 min break between supersets.\n\nGroup 1 — Lower: quads · hamstrings · glutes · adductors\nGroup 2 — Upper: chest · lats · shoulders · triceps · biceps\nGroup 3 — Core: anti-rotation · rectus abdominis · obliques",
+      "exerciseGroups": [
+        {
+          "id": "wp-mon-g1-lower",
+          "exercises": [
+            {
+              "id": "wp-mon-e1",
+              "name": "Barbell Back Squats",
+              "notes": "Bar on traps, chest up, knees track toes, drive through heels"
+            },
+            {
+              "id": "wp-mon-e2",
+              "name": "Romanian Deadlifts",
+              "notes": "Hip hinge, soft knee, bar stays close, feel hamstring stretch at bottom"
+            },
+            {
+              "id": "wp-mon-e3",
+              "name": "DB Reverse Lunges",
+              "notes": "Step back, front shin vertical, lower back knee toward floor"
+            },
+            {
+              "id": "wp-mon-e4",
+              "name": "DB Hip Thrusts",
+              "notes": "Upper back on bench edge, chin tucked, squeeze glutes hard at top"
+            }
+          ]
+        },
+        {
+          "id": "wp-mon-g2-upper",
+          "exercises": [
+            {
+              "id": "wp-mon-e5",
+              "name": "DB Bench Press",
+              "notes": "Shoulder blades pinched back, lower to mid-chest, press straight up"
+            },
+            {
+              "id": "wp-mon-e6",
+              "name": "BB Bent-over Row",
+              "notes": "Hinge 45°, pull bar to lower ribs, lead with elbows, control the descent"
+            },
+            {
+              "id": "wp-mon-e7",
+              "name": "DB Overhead Press",
+              "notes": "Core tight, press straight up, avoid flaring ribs at lockout"
+            },
+            {
+              "id": "wp-mon-e8",
+              "name": "Renegade Row",
+              "notes": "Plank position, row one side at a time, resist rotation with hips"
+            }
+          ]
+        },
+        {
+          "id": "wp-mon-g3-core",
+          "exercises": [
+            {
+              "id": "wp-mon-e9",
+              "name": "Push-up to T-Rotation",
+              "notes": "Push-up then rotate to side plank, arm toward ceiling, control the twist"
+            },
+            {
+              "id": "wp-mon-e10",
+              "name": "Plank Up-Downs",
+              "notes": "From plank lower to forearms one arm at a time, keep hips level"
+            },
+            {
+              "id": "wp-mon-e11",
+              "name": "Bicycle Crunches",
+              "notes": "Slow and controlled, elbow to opposite knee, full rotation each side"
+            }
+          ]
+        }
+      ],
+      "createdAt": 1749600000000
+    },
+    {
+      "id": "wp-wed-pushcore-001",
+      "name": "Wednesday Push + Core",
+      "type": "circuit",
+      "workTime": 45,
+      "restTime": 20,
+      "intervals": 1,
+      "rounds": 3,
+      "cycleBreak": 90,
+      "warmup": 60,
+      "cooldown": 60,
+      "accentColor": "#06b6d4",
+      "notes": "Wednesday after aerial class. Push emphasis, triceps, shoulders, core. 3 rounds · 45s work · 20s rest · 90s break.\n\nGroup 1 — Push: chest · anterior deltoid · triceps\nGroup 2 — Isolation: triceps · lateral deltoid · core\nGroup 3 — Abs: anti-extension · obliques · hip flexors",
+      "exerciseGroups": [
+        {
+          "id": "wp-wed-g1-push",
+          "exercises": [
+            {
+              "id": "wp-wed-e1",
+              "name": "DB Incline Bench Press",
+              "notes": "30-45° incline, lower dumbbells to chest, press up and slightly in"
+            },
+            {
+              "id": "wp-wed-e2",
+              "name": "DB Chest Press",
+              "notes": "Flat back, dumbbells meet at top, controlled eccentric 2-3 seconds"
+            },
+            {
+              "id": "wp-wed-e3",
+              "name": "DB Overhead Press",
+              "notes": "Standing or seated, brace core, avoid arching lower back at lockout"
+            },
+            {
+              "id": "wp-wed-e4",
+              "name": "Pike Push-ups",
+              "notes": "Hips high, lower forehead toward floor, elbows track out at 45°"
+            }
+          ]
+        },
+        {
+          "id": "wp-wed-g2-isolation",
+          "exercises": [
+            {
+              "id": "wp-wed-e5",
+              "name": "Tricep Dips",
+              "notes": "Hands on bench behind you, elbows point back not out, lower 90°"
+            },
+            {
+              "id": "wp-wed-e6",
+              "name": "DB Lateral Raises",
+              "notes": "Slight forward lean, lead with elbows, stop at shoulder height, slow down"
+            },
+            {
+              "id": "wp-wed-e7",
+              "name": "Tricep Overhead Extension",
+              "notes": "One DB overhead, elbows in, lower behind head, extend fully"
+            },
+            {
+              "id": "wp-wed-e8",
+              "name": "Mountain Climbers",
+              "notes": "Shoulders over wrists, drive knees to chest, keep hips level"
+            }
+          ]
+        },
+        {
+          "id": "wp-wed-g3-abs",
+          "exercises": [
+            {
+              "id": "wp-wed-e9",
+              "name": "Hollow Body Hold",
+              "notes": "Lower back pressed to floor, arms overhead, legs low and straight"
+            },
+            {
+              "id": "wp-wed-e10",
+              "name": "Bicycle Crunches",
+              "notes": "Slow and deliberate, full rotation, keep lower back flat"
+            },
+            {
+              "id": "wp-wed-e11",
+              "name": "Leg Raises",
+              "notes": "Legs together, lower slowly without letting back arch off floor"
+            }
+          ]
+        }
+      ],
+      "createdAt": 1749600000001
+    },
+    {
+      "id": "wp-fri-legsglutes-001",
+      "name": "Friday Legs + Glutes",
+      "type": "circuit",
+      "workTime": 45,
+      "restTime": 20,
+      "intervals": 1,
+      "rounds": 4,
+      "cycleBreak": 120,
+      "warmup": 60,
+      "cooldown": 60,
+      "accentColor": "#ef4444",
+      "notes": "Friday legs and glutes focus. 4 rounds · 45s work · 20s rest · 2 min break between supersets.\n\nGroup 1 — Squat pattern: quads · glutes · adductors\nGroup 2 — Hinge + glute isolation: hamstrings · glutes · posterior chain\nGroup 3 — Isolation finisher: glutes · calves · abductors",
+      "exerciseGroups": [
+        {
+          "id": "wp-fri-g1-squat",
+          "exercises": [
+            {
+              "id": "wp-fri-e1",
+              "name": "BB Back Squats",
+              "notes": "Bar on traps, depth to parallel or below, drive knees out on ascent"
+            },
+            {
+              "id": "wp-fri-e2",
+              "name": "Bulgarian Split Squats",
+              "notes": "Rear foot elevated, torso upright, lower until front thigh is parallel"
+            },
+            {
+              "id": "wp-fri-e3",
+              "name": "Goblet Squats",
+              "notes": "DB at chest, squat wide, elbows push knees out at bottom"
+            },
+            {
+              "id": "wp-fri-e4",
+              "name": "DB Lateral Lunges",
+              "notes": "Step wide to one side, sit into hip, keep trailing leg straight"
+            }
+          ]
+        },
+        {
+          "id": "wp-fri-g2-hinge",
+          "exercises": [
+            {
+              "id": "wp-fri-e5",
+              "name": "Romanian Deadlifts",
+              "notes": "Bar or DBs, hip hinge, slight knee bend, feel hamstring stretch"
+            },
+            {
+              "id": "wp-fri-e6",
+              "name": "BB Hip Thrusts",
+              "notes": "Bar padded across hips, drive through heels, full glute squeeze at top"
+            },
+            {
+              "id": "wp-fri-e7",
+              "name": "Single-Leg RDL",
+              "notes": "Hinge on one leg, other leg extends back, keep hips square"
+            },
+            {
+              "id": "wp-fri-e8",
+              "name": "Good Mornings",
+              "notes": "Bar on traps, soft knee, hinge forward until torso near parallel, squeeze up"
+            }
+          ]
+        },
+        {
+          "id": "wp-fri-g3-isolation",
+          "exercises": [
+            {
+              "id": "wp-fri-e9",
+              "name": "Glute Kickbacks",
+              "notes": "On all fours, drive heel to ceiling, squeeze glute at top, no hip rotation"
+            },
+            {
+              "id": "wp-fri-e10",
+              "name": "Calf Raises",
+              "notes": "Full range of motion, pause at top and bottom, slow controlled tempo"
+            },
+            {
+              "id": "wp-fri-e11",
+              "name": "Hip Abductions",
+              "notes": "Side lying or standing with DB, lift leg to 45°, control the descent"
+            }
+          ]
+        }
+      ],
+      "createdAt": 1749600000002
+    },
+    {
+      "id": "wp-sat-completion-001",
+      "name": "Saturday Completion",
+      "type": "circuit",
+      "workTime": 45,
+      "restTime": 20,
+      "intervals": 1,
+      "rounds": 3,
+      "cycleBreak": 90,
+      "warmup": 0,
+      "cooldown": 60,
+      "accentColor": "#22c55e",
+      "notes": "Saturday after 30 min run. ~31 min. Completes weekly back, biceps, shoulder, and abs volume. No warmup — run covers it.\n\nGroup 1 — Back: lats · rhomboids · rear deltoid · traps\nGroup 2 — Biceps + Shoulders + Abs: biceps · lateral deltoid · rectus abdominis · obliques",
+      "exerciseGroups": [
+        {
+          "id": "wp-sat-g1-back",
+          "exercises": [
+            {
+              "id": "wp-sat-e1",
+              "name": "BB Bent-over Row",
+              "notes": "Hinge 45°, pull to lower ribs, elbows close to body, slow negative"
+            },
+            {
+              "id": "wp-sat-e2",
+              "name": "Single-arm DB Row",
+              "notes": "Knee and hand on bench, row to hip, full stretch at bottom"
+            },
+            {
+              "id": "wp-sat-e3",
+              "name": "Prone Y Raises",
+              "notes": "Face down, arms form Y overhead, lift with rear delts, thumbs up"
+            }
+          ]
+        },
+        {
+          "id": "wp-sat-g2-arms-abs",
+          "exercises": [
+            {
+              "id": "wp-sat-e4",
+              "name": "DB Bicep Curls",
+              "notes": "Elbows pinned at sides, full range, supinate at top, no swing"
+            },
+            {
+              "id": "wp-sat-e5",
+              "name": "Hammer Curls",
+              "notes": "Neutral grip, curl both arms simultaneously, control the descent"
+            },
+            {
+              "id": "wp-sat-e6",
+              "name": "DB Lateral Raises",
+              "notes": "Slight forward lean, lead with elbows, stop at shoulder height"
+            },
+            {
+              "id": "wp-sat-e7",
+              "name": "Bicycle Crunches",
+              "notes": "Slow and controlled, full elbow-to-knee rotation each rep"
+            },
+            {
+              "id": "wp-sat-e8",
+              "name": "Leg Raises",
+              "notes": "Legs together, lower slowly, keep lower back pressed to floor"
+            },
+            {
+              "id": "wp-sat-e9",
+              "name": "Russian Twists",
+              "notes": "Feet off floor, lean back 45°, rotate side to side with control"
+            }
+          ]
+        }
+      ],
+      "createdAt": 1749600000003
+    }
+  ]
+}
