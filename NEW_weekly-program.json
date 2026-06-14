@@ -3,7 +3,7 @@
   "workouts": [
     {
       "id": "wp-mon-fullbody-001",
-      "name": "Monday Full Body",
+      "name": "NEW Monday Full Body",
       "type": "circuit",
       "workTime": 45,
       "restTime": 20,
@@ -90,7 +90,7 @@
     },
     {
       "id": "wp-wed-pushcore-001",
-      "name": "Wednesday Push + Core",
+      "name": "NEW Wednesday Push + Core",
       "type": "circuit",
       "workTime": 45,
       "restTime": 20,
@@ -177,7 +177,7 @@
     },
     {
       "id": "wp-fri-legsglutes-001",
-      "name": "Friday Legs + Glutes",
+      "name": "NEW Friday Legs + Glutes",
       "type": "circuit",
       "workTime": 45,
       "restTime": 20,
@@ -264,7 +264,7 @@
     },
     {
       "id": "wp-sat-completion-001",
-      "name": "Saturday Completion",
+      "name": "NEW Saturday Completion",
       "type": "circuit",
       "workTime": 45,
       "restTime": 20,
