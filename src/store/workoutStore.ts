@@ -69,10 +69,11 @@ interface WorkoutStore {
   workouts: Workout[]
   sessions: CompletedSession[]
   soundEnabled: boolean
+  voiceEnabled: boolean
   reminderDays: number        // 0 = off, 7, 30, 90
   lastBackupAt: number        // ms timestamp of last real export
   reminderSnoozedAt: number   // ms timestamp of last dismiss (without export)
-  schedule: Record<string, string> // day key → workout id, e.g. { mon: 'workout-id-123' }
+  schedule: Record<string, string> // day key → workout id or '__rest__'
   addWorkout: (workout: Workout) => void
   updateWorkout: (id: string, updates: Partial<Workout>) => void
   deleteWorkout: (id: string) => void
@@ -80,6 +81,7 @@ interface WorkoutStore {
   clearHistory: () => void
   setSessions: (sessions: CompletedSession[]) => void
   setSoundEnabled: (v: boolean) => void
+  setVoiceEnabled: (v: boolean) => void
   togglePin: (id: string) => void
   moveWorkout: (newOrder: Workout[]) => void
   setReminderDays: (days: number) => void
@@ -94,6 +96,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
       workouts: DEFAULT_WORKOUTS,
       sessions: [],
       soundEnabled: true,
+      voiceEnabled: true,
       reminderDays: 30,
       lastBackupAt: 0,
       reminderSnoozedAt: 0,
@@ -118,6 +121,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
       clearHistory: () => set({ sessions: [] }),
       setSessions: (sessions) => set({ sessions }),
       setSoundEnabled: (v) => set({ soundEnabled: v }),
+      setVoiceEnabled: (v) => set({ voiceEnabled: v }),
       togglePin: (id) =>
         set((state) => {
           const idx = state.workouts.findIndex((w) => w.id === id)
@@ -145,9 +149,9 @@ export const useWorkoutStore = create<WorkoutStore>()(
     }),
     {
       name: 'my-workouts-store',
-      version: 7,
+      version: 8,
       migrate: (persisted: unknown, fromVersion: number) => {
-        const state = persisted as { workouts: any[]; sessions?: any[]; soundEnabled?: boolean; reminderDays?: number; lastBackupAt?: number; reminderSnoozedAt?: number; schedule?: Record<string, string> }
+        const state = persisted as { workouts: any[]; sessions?: any[]; soundEnabled?: boolean; voiceEnabled?: boolean; reminderDays?: number; lastBackupAt?: number; reminderSnoozedAt?: number; schedule?: Record<string, string> }
 
         if (fromVersion < 2) {
           state.workouts = (state.workouts ?? []).map((w: any) => ({
@@ -190,6 +194,10 @@ export const useWorkoutStore = create<WorkoutStore>()(
 
         if (fromVersion < 7) {
           state.schedule = (state as any).schedule ?? {}
+        }
+
+        if (fromVersion < 8) {
+          state.voiceEnabled = (state as any).voiceEnabled ?? true
         }
 
         return state

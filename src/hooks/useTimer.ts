@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import type { Workout, Phase } from '@/types/workout'
-import { playCountdownBeep, playPhaseStart, playComplete } from '@/lib/audio'
+import { playCountdownBeep, playPhaseStart, playComplete, speakText } from '@/lib/audio'
 import { haptic } from '@/lib/haptics'
 
 interface Segment {
@@ -128,9 +128,13 @@ export function useTimer(workout: Workout) {
     } else {
       const dur = segs[nextIndex].duration
       // Anchor to previous endAt to prevent drift accumulation across segments
+      const nextPhase = segs[nextIndex].phase
+      const nextLabel = segs[nextIndex].label
       endAtRef.current = endAtRef.current + dur * 1000
       scheduleBeeps(endAtRef.current)
-      playPhaseStart(); haptic('phase')
+      playPhaseStart()
+      haptic(nextPhase === 'work' ? 'work' : nextPhase === 'rest' ? 'rest' : nextPhase === 'break' ? 'break' : 'phase')
+      if (nextPhase === 'work' && nextLabel !== 'Work') speakText(nextLabel)
       setState((s) => ({ ...s, segmentIndex: nextIndex, timeRemaining: dur }))
     }
   }, [clearBeeps, scheduleBeeps])

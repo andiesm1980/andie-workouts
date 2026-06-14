@@ -64,6 +64,44 @@ export default function HomePage() {
   const { workouts, sessions, addWorkout, deleteWorkout, clearHistory, moveWorkout, setSessions, reminderDays, lastBackupAt, reminderSnoozedAt, setReminderDays, setLastBackupAt, setReminderSnoozedAt, schedule, setScheduleDay } = useWorkoutStore()
   const drive = useDrive()
   const todayKey = JS_TO_KEY[new Date().getDay()]
+
+  const streak = useMemo(() => {
+    if (sessions.length === 0) return 0
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const sessionDays = new Set(sessions.map(s => { const d = new Date(s.date); d.setHours(0, 0, 0, 0); return d.getTime() }))
+    let count = 0; let check = today.getTime()
+    while (sessionDays.has(check)) { count++; check -= 86400000 }
+    return count
+  }, [sessions])
+
+  const weekStart = useMemo(() => {
+    const d = new Date(); d.setHours(0, 0, 0, 0)
+    const day = d.getDay(); d.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
+    return d.getTime()
+  }, [])
+
+  const weekSessions = useMemo(() => sessions.filter(s => s.date >= weekStart), [sessions, weekStart])
+  const weekTotalTime = weekSessions.reduce((t, s) => t + s.durationSeconds, 0)
+
+  const bests = useMemo(() => {
+    const m = new Map<string, number>()
+    sessions.forEach(s => { const e = m.get(s.workoutId); if (!e || s.durationSeconds < e) m.set(s.workoutId, s.durationSeconds) })
+    return m
+  }, [sessions])
+
+  const sessionCountByWorkout = useMemo(() => {
+    const m = new Map<string, number>()
+    sessions.forEach(s => m.set(s.workoutId, (m.get(s.workoutId) ?? 0) + 1))
+    return m
+  }, [sessions])
+
+  const todaySuggestion = useMemo(() => {
+    if (schedule[todayKey] || workouts.length === 0) return null
+    const lastDate = new Map<string, number>()
+    sessions.forEach(s => { const cur = lastDate.get(s.workoutId) ?? 0; if (s.date > cur) lastDate.set(s.workoutId, s.date) })
+    return [...workouts].sort((a, b) => (lastDate.get(a.id) ?? 0) - (lastDate.get(b.id) ?? 0))[0] ?? null
+  }, [schedule, todayKey, workouts, sessions])
+
   const [schedulingDay, setSchedulingDay] = useState<string | null>(null)
   const [showPicker, setShowPicker] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
@@ -201,9 +239,16 @@ export default function HomePage() {
 
         <div className="flex items-end justify-between mb-5">
           <div>
-            <p className="text-white/25 text-xs font-semibold tracking-widest uppercase mb-1">
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-            </p>
+            <div className="flex items-center gap-2 mb-1">
+              <p className="text-white/25 text-xs font-semibold tracking-widest uppercase">
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+              </p>
+              {streak > 0 && (
+                <span className="text-[11px] font-bold px-1.5 py-px rounded-full" style={{ backgroundColor: 'rgba(251,191,36,0.15)', color: '#fbbf24' }}>
+                  {streak > 1 ? `🔥 ${streak}` : '🔥 1'}
+                </span>
+              )}
+            </div>
             <h1 className="text-white text-3xl font-semibold tracking-tight">Workouts</h1>
           </div>
           <div className="flex items-center gap-2">
@@ -290,7 +335,8 @@ export default function HomePage() {
         <div className="flex justify-between">
           {DAYS.map(({ key, short }) => {
             const assignedId = schedule[key]
-            const assignedWorkout = assignedId ? workouts.find(w => w.id === assignedId) : null
+            const isRest = assignedId === '__rest__'
+            const assignedWorkout = assignedId && !isRest ? workouts.find(w => w.id === assignedId) : null
             const isToday = key === todayKey
             return (
               <button
@@ -300,10 +346,14 @@ export default function HomePage() {
                 style={{ minWidth: 36, backgroundColor: isToday ? 'rgba(255,255,255,0.05)' : 'transparent' }}
               >
                 <span className="text-[10px] font-semibold" style={{ color: isToday ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)' }}>{short}</span>
-                <div
-                  className="w-2 h-2 rounded-full transition-colors"
-                  style={{ backgroundColor: assignedWorkout?.accentColor ?? (isToday ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)') }}
-                />
+                {isRest ? (
+                  <span className="text-[9px] leading-none" style={{ color: 'rgba(255,255,255,0.2)' }}>Zzz</span>
+                ) : (
+                  <div
+                    className="w-2 h-2 rounded-full transition-colors"
+                    style={{ backgroundColor: assignedWorkout?.accentColor ?? (isToday ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)') }}
+                  />
+                )}
               </button>
             )
           })}
@@ -344,24 +394,55 @@ export default function HomePage() {
           <>
             {(() => {
               const todayWorkoutId = schedule[todayKey]
-              const todayWorkout = todayWorkoutId ? workouts.find(w => w.id === todayWorkoutId) : null
-              if (!todayWorkout) return null
-              return (
-                <button
-                  onClick={() => handleSelect(todayWorkout.id)}
-                  className="flex items-center gap-3 rounded-2xl px-4 py-3 mb-4 w-full text-left transition-all active:scale-98"
-                  style={{ backgroundColor: `${todayWorkout.accentColor ?? '#f0407a'}14`, border: `1px solid ${todayWorkout.accentColor ?? '#f0407a'}25` }}
-                >
-                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: todayWorkout.accentColor ?? '#f0407a' }} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white/40 text-[10px] font-semibold tracking-widest uppercase">Today</p>
-                    <p className="text-white/80 text-sm font-medium truncate">{todayWorkout.name}</p>
+              if (todayWorkoutId === '__rest__') {
+                return (
+                  <div className="flex items-center gap-3 rounded-2xl px-4 py-3 mb-4" style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <span className="text-base leading-none">😴</span>
+                    <div>
+                      <p className="text-white/40 text-[10px] font-semibold tracking-widest uppercase">Today</p>
+                      <p className="text-white/60 text-sm font-medium">Rest day</p>
+                    </div>
                   </div>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
-              )
+                )
+              }
+              const todayWorkout = todayWorkoutId ? workouts.find(w => w.id === todayWorkoutId) : null
+              if (todayWorkout) {
+                return (
+                  <button
+                    onClick={() => handleSelect(todayWorkout.id)}
+                    className="flex items-center gap-3 rounded-2xl px-4 py-3 mb-4 w-full text-left transition-all active:scale-98"
+                    style={{ backgroundColor: `${todayWorkout.accentColor ?? '#f0407a'}14`, border: `1px solid ${todayWorkout.accentColor ?? '#f0407a'}25` }}
+                  >
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: todayWorkout.accentColor ?? '#f0407a' }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white/40 text-[10px] font-semibold tracking-widest uppercase">Today</p>
+                      <p className="text-white/80 text-sm font-medium truncate">{todayWorkout.name}</p>
+                    </div>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </button>
+                )
+              }
+              if (todaySuggestion) {
+                return (
+                  <button
+                    onClick={() => handleSelect(todaySuggestion.id)}
+                    className="flex items-center gap-3 rounded-2xl px-4 py-3 mb-4 w-full text-left transition-all active:scale-98"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                  >
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: todaySuggestion.accentColor ?? '#f0407a', opacity: 0.6 }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white/30 text-[10px] font-semibold tracking-widest uppercase">Suggested for today</p>
+                      <p className="text-white/65 text-sm font-medium truncate">{todaySuggestion.name}</p>
+                    </div>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </button>
+                )
+              }
+              return null
             })()}
           {filtered.map((workout, i) => {
             const globalIdx = workouts.indexOf(workout)
@@ -401,12 +482,30 @@ export default function HomePage() {
               onClick={() => setShowHistory((v) => !v)}
             >
               <span className="text-white/35 text-xs font-semibold tracking-widest uppercase">History</span>
-              <span className="text-white/30 text-xs">{showHistory ? '▲' : '▼'}</span>
+              <div className="flex items-center gap-2">
+                {weekSessions.length > 0 && (
+                  <span className="text-white/25 text-xs">{weekSessions.length} this week · {fmtDuration(weekTotalTime)}</span>
+                )}
+                <span className="text-white/30 text-xs">{showHistory ? '▲' : '▼'}</span>
+              </div>
             </button>
             {showHistory && (
               <div className="flex flex-col gap-1.5">
+                {weekSessions.length > 0 && (
+                  <div className="flex gap-2 mb-2">
+                    <div className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}>
+                      <p className="text-white/25 text-[10px] font-semibold uppercase tracking-wide">This week</p>
+                      <p className="text-white/70 text-sm font-semibold mt-0.5">{weekSessions.length} session{weekSessions.length !== 1 ? 's' : ''}</p>
+                    </div>
+                    <div className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}>
+                      <p className="text-white/25 text-[10px] font-semibold uppercase tracking-wide">Total time</p>
+                      <p className="text-white/70 text-sm font-semibold mt-0.5">{fmtDuration(weekTotalTime)}</p>
+                    </div>
+                  </div>
+                )}
                 {sessions.slice(0, 20).map((s) => {
                   const sessionAccent = TYPE_COLOR[workoutTypeMap.get(s.workoutId) ?? 'hiit']
+                  const isPR = (sessionCountByWorkout.get(s.workoutId) ?? 0) >= 2 && s.durationSeconds === bests.get(s.workoutId)
                   return (
                     <div
                       key={s.id}
@@ -422,6 +521,9 @@ export default function HomePage() {
                         <p className="text-white/25 text-xs mt-0.5">{relativeDate(s.date)}</p>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
+                        {isPR && (
+                          <span className="text-[10px] font-bold px-1.5 py-px rounded" style={{ backgroundColor: 'rgba(251,191,36,0.18)', color: '#fbbf24' }}>PR</span>
+                        )}
                         <span className="text-white/30 text-sm tabular-nums">{fmtDuration(s.durationSeconds)}</span>
                         {s.rounds && <span className="text-white/20 text-xs">·</span>}
                         {s.rounds && <span className="text-white/30 text-xs">{s.rounds}r</span>}
@@ -831,12 +933,24 @@ export default function HomePage() {
               {schedule[schedulingDay] && (
                 <button
                   onClick={() => { setScheduleDay(schedulingDay, null); setSchedulingDay(null) }}
-                  className="flex items-center gap-3 w-full px-2 py-3 rounded-2xl mb-2 transition-colors active:bg-white/5"
+                  className="flex items-center gap-3 w-full px-2 py-3 rounded-2xl mb-1 transition-colors active:bg-white/5"
                   style={{ color: 'rgba(239,68,68,0.7)' }}
                 >
                   <span className="text-sm">Clear day</span>
                 </button>
               )}
+              <button
+                onClick={() => { setScheduleDay(schedulingDay, '__rest__'); setSchedulingDay(null) }}
+                className="flex items-center gap-3 w-full px-2 py-3 rounded-2xl mb-2 transition-colors active:bg-white/5"
+              >
+                <span className="text-base leading-none">😴</span>
+                <span className="text-sm" style={{ color: schedule[schedulingDay] === '__rest__' ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)' }}>Rest day</span>
+                {schedule[schedulingDay] === '__rest__' && (
+                  <svg className="ml-auto" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+              </button>
               {workouts.map(w => {
                 const isAssigned = schedule[schedulingDay] === w.id
                 return (

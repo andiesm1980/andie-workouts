@@ -1,7 +1,9 @@
 let audioCtx: AudioContext | null = null
 let _soundEnabled = true
+let _voiceEnabled = true
 
 export function setSoundEnabled(v: boolean) { _soundEnabled = v }
+export function setVoiceEnabled(v: boolean) { _voiceEnabled = v }
 
 function getCtx(): AudioContext | null {
   if (!_soundEnabled) return null
@@ -53,4 +55,14 @@ export function playComplete() {
   tone(659, now + 0.15, 0.3, 0.4)
   tone(784, now + 0.3, 0.3, 0.4)
   tone(1047, now + 0.45, 0.6, 0.4)
+}
+
+export function speakText(text: string) {
+  if (!_voiceEnabled || !_soundEnabled) return
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
+  window.speechSynthesis.cancel()
+  const utter = new SpeechSynthesisUtterance(text)
+  utter.volume = 0.9
+  utter.rate = 1.1
+  window.speechSynthesis.speak(utter)
 }

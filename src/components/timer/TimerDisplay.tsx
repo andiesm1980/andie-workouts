@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTimer } from '@/hooks/useTimer'
 import { useWakeLock } from '@/hooks/useWakeLock'
-import { initAudio, setSoundEnabled } from '@/lib/audio'
+import { initAudio, setSoundEnabled, setVoiceEnabled as setAudioVoiceEnabled } from '@/lib/audio'
 import { formatDuration } from '@/lib/workoutUtils'
 import { haptic } from '@/lib/haptics'
 import { useWorkoutStore } from '@/store/workoutStore'
@@ -30,7 +30,7 @@ export function TimerDisplay({ workout }: Props) {
   const timer = useTimer(workout)
   useWakeLock(timer.isRunning)
   const [showQuitConfirm, setShowQuitConfirm] = useState(false)
-  const { soundEnabled, setSoundEnabled: storeSoundEnabled, recordSession } = useWorkoutStore()
+  const { soundEnabled, setSoundEnabled: storeSoundEnabled, voiceEnabled, setVoiceEnabled: storeSetVoiceEnabled, recordSession } = useWorkoutStore()
   const sessionRecorded = useRef(false)
   const autoStartFired = useRef(false)
 
@@ -47,6 +47,8 @@ export function TimerDisplay({ workout }: Props) {
   }
 
   useEffect(() => { setSoundEnabled(soundEnabled) }, [soundEnabled])
+  useEffect(() => { setAudioVoiceEnabled(voiceEnabled) }, [voiceEnabled])
+  const toggleVoice = () => storeSetVoiceEnabled(!voiceEnabled)
 
   useEffect(() => {
     if (workout.autoStart && !autoStartFired.current) {
@@ -188,6 +190,22 @@ export function TimerDisplay({ workout }: Props) {
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
                 <line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" />
+              </svg>
+            )}
+          </button>
+          <button onClick={toggleVoice}
+            className="w-9 h-9 flex items-center justify-center rounded-full transition-colors active:scale-90"
+            style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} aria-label={voiceEnabled ? 'Disable voice' : 'Enable voice'}>
+            {voiceEnabled ? (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" />
+              </svg>
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="1" y1="1" x2="23" y2="23" />
+                <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
+                <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23M12 19v4M8 23h8" />
               </svg>
             )}
           </button>
