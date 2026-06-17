@@ -21,6 +21,7 @@ export interface CompletedSession {
 export interface ExerciseGroup {
   id: string
   exercises: Exercise[]
+  rounds?: number  // overrides workout.rounds for this superset when set
 }
 
 export interface Workout {

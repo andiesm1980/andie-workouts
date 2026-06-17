@@ -15,6 +15,7 @@ export function computeTotalTime(workout: Workout): number {
       const exercises = group.exercises ?? []
       const restTime = workout.restTime
       const isLastGroup = gIdx === groups.length - 1
+      const groupRounds = group.rounds ?? rounds
       const workPerSet = exercises.reduce((sum, ex) => sum + (ex.workTime ?? workout.workTime), 0)
       const allRests = exercises.reduce((sum, ex) => {
         const r = ex.restTime ?? restTime
@@ -27,7 +28,7 @@ export function computeTotalTime(workout: Workout): number {
       }, 0)
 
       // Every group: last exercise of the last round gets no rest (BREAK or end follows directly)
-      const baseTime = (rounds - 1) * (workPerSet + allRests) + (workPerSet + lastSetRests)
+      const baseTime = (groupRounds - 1) * (workPerSet + allRests) + (workPerSet + lastSetRests)
       total += isLastGroup ? baseTime : baseTime + cycleBreak
     })
   }

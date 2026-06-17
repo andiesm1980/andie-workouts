@@ -44,9 +44,10 @@ export function buildSegments(workout: Workout): Segment[] {
       const group = groups[gIdx]
       const isLastGroup = gIdx === groups.length - 1
       const exCount = (group.exercises ?? []).length
+      const groupRounds = group.rounds ?? rounds
 
-      for (let set = 1; set <= rounds; set++) {
-        const isLastSet = set === rounds
+      for (let set = 1; set <= groupRounds; set++) {
+        const isLastSet = set === groupRounds
         for (let exIdx = 0; exIdx < exCount; exIdx++) {
           const ex = group.exercises[exIdx]
           const isLastEx = exIdx === exCount - 1
@@ -62,7 +63,7 @@ export function buildSegments(workout: Workout): Segment[] {
       }
       // Break once after all rounds are done, before the next group
       if (!isLastGroup && cycleBreak > 0) {
-        segments.push({ phase: 'break', duration: cycleBreak, label: 'Break', round: rounds, exerciseIndex: 0, groupIndex: gIdx })
+        segments.push({ phase: 'break', duration: cycleBreak, label: 'Break', round: groupRounds, exerciseIndex: 0, groupIndex: gIdx })
       }
     }
   }
@@ -225,12 +226,17 @@ export function useTimer(workout: Workout) {
   const totalDuration = currentSegment?.duration ?? 1
   const progress = 1 - state.timeRemaining / totalDuration
 
+  const effectiveGroupRounds =
+    workout.type === 'circuit' && (currentSegment?.groupIndex ?? -1) >= 0
+      ? ((workout.exerciseGroups ?? [])[currentSegment?.groupIndex ?? 0]?.rounds ?? workout.rounds)
+      : workout.rounds
+
   return {
     phase: state.isComplete ? ('complete' as Phase) : (currentSegment?.phase ?? ('idle' as Phase)),
     timeRemaining: state.timeRemaining,
     totalTime: totalDuration,
     currentRound: currentSegment?.round ?? 0,
-    totalRounds: workout.rounds,
+    totalRounds: state.isComplete ? workout.rounds : effectiveGroupRounds,
     currentGroup: (currentSegment?.groupIndex ?? -1) + 1,
     totalGroups: (workout.exerciseGroups ?? []).length,
     exerciseName: currentSegment?.label ?? '',

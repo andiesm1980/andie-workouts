@@ -37,10 +37,12 @@ export function ExercisesTab({ workout, onChange }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingExtra, setEditingExtra] = useState<{ id: string; field: 'work' | 'rest' } | null>(null)
   const [editingNotes, setEditingNotes] = useState<string | null>(null)
+  const [editingGroupRounds, setEditingGroupRounds] = useState<string | null>(null)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const extraInputRef = useRef<HTMLInputElement>(null)
   const notesInputRef = useRef<HTMLInputElement>(null)
+  const groupRoundsInputRef = useRef<HTMLInputElement>(null)
   const rowEls = useRef<Map<string, HTMLElement>>(new Map())
   const groupEls = useRef<Map<string, HTMLElement>>(new Map())
 
@@ -55,6 +57,10 @@ export function ExercisesTab({ workout, onChange }: Props) {
   const updateGroup = useCallback((groupId: string, exercises: Exercise[]) => {
     onChange({ exerciseGroups: (workout.exerciseGroups ?? []).map((g) => (g.id === groupId ? { ...g, exercises } : g)) })
   }, [workout.exerciseGroups, onChange])
+
+  const updateGroupRounds = useCallback((groupId: string, rounds: number | undefined) => {
+    updateGroups((workout.exerciseGroups ?? []).map((g) => (g.id === groupId ? { ...g, rounds } : g)))
+  }, [workout.exerciseGroups, updateGroups])
 
   // Cross-group exercise drag
   const [exDragActive, setExDragActive] = useState<ExDragState | null>(null)
@@ -230,6 +236,16 @@ export function ExercisesTab({ workout, onChange }: Props) {
               <span className="flex-1 text-xs font-semibold tracking-widest uppercase" style={{ color: '#4e8fff' }}>
                 Superset {gIdx + 1}
               </span>
+              <button
+                onClick={() => { setEditingGroupRounds(group.id); setTimeout(() => groupRoundsInputRef.current?.focus(), 50) }}
+                className="shrink-0 px-2 py-1 rounded-lg text-xs tabular-nums transition-colors"
+                style={{
+                  backgroundColor: group.rounds !== undefined ? 'rgba(78,143,255,0.18)' : 'rgba(255,255,255,0.05)',
+                  color: group.rounds !== undefined ? '#4e8fff' : 'rgba(255,255,255,0.2)',
+                }}
+              >
+                {group.rounds ?? workout.rounds}×
+              </button>
               {groups.length > 1 && (
                 <button
                   onClick={() => deleteGroup(group.id)}
@@ -244,6 +260,37 @@ export function ExercisesTab({ workout, onChange }: Props) {
             </div>
 
             <div className="mb-1" style={{ height: 1, backgroundColor: 'rgba(78,143,255,0.12)' }} />
+
+            {editingGroupRounds === group.id && (
+              <div className="flex items-center gap-3 py-2 pl-1 mb-1">
+                <span className="text-white/30 text-xs">Sets:</span>
+                <input
+                  ref={groupRoundsInputRef}
+                  type="number"
+                  min={1} max={20} step={1}
+                  defaultValue={group.rounds ?? workout.rounds}
+                  className="w-12 bg-transparent text-white text-sm text-center focus:outline-none border-b border-white/30"
+                  onBlur={(e) => {
+                    const val = parseInt(e.target.value)
+                    if (!isNaN(val) && val >= 1) updateGroupRounds(group.id, val)
+                    setEditingGroupRounds(null)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') e.currentTarget.blur()
+                    if (e.key === 'Escape') setEditingGroupRounds(null)
+                  }}
+                />
+                <span className="text-white/30 text-xs">sets</span>
+                {group.rounds !== undefined && (
+                  <button
+                    onPointerDown={(e) => { e.preventDefault(); updateGroupRounds(group.id, undefined); setEditingGroupRounds(null) }}
+                    className="text-white/25 text-xs hover:text-white/50 transition-colors"
+                  >
+                    reset to global
+                  </button>
+                )}
+              </div>
+            )}
 
             {group.exercises.length === 0 && (
               <p className="text-white/20 text-sm py-3 pl-1">No exercises yet</p>
