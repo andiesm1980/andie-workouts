@@ -291,7 +291,7 @@ export function TimerDisplay({ workout }: Props) {
                     {nextGroupExercises.map((ex) => (
                       <div key={ex.id} className="flex items-center gap-3 py-1 px-2 rounded-lg -mx-2">
                         <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} />
-                        <span className="text-xl font-semibold truncate" style={{ color: 'rgba(255,255,255,0.9)' }}>{ex.name}</span>
+                        <span className="text-3xl font-semibold leading-snug" style={{ color: 'rgba(255,255,255,0.9)' }}>{ex.name}</span>
                       </div>
                     ))}
                   </div>
