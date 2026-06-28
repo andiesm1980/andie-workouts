@@ -96,6 +96,9 @@ export function useTimer(workout: Workout) {
   stateRef.current = state
   const segmentsRef = useRef(segments)
   segmentsRef.current = segments
+  const workoutRef = useRef(workout)
+  workoutRef.current = workout
+  const spokenNotesRef = useRef<Set<string>>(new Set())
 
   // Wall-clock timestamp when the current segment ends. Anchored to the
   // previous segment's end (not Date.now()) so segments never accumulate drift.
@@ -135,7 +138,17 @@ export function useTimer(workout: Workout) {
       scheduleBeeps(endAtRef.current)
       playPhaseStart()
       haptic(nextPhase === 'work' ? 'work' : nextPhase === 'rest' ? 'rest' : nextPhase === 'break' ? 'break' : 'phase')
-      if (nextPhase === 'work' && nextLabel !== 'Work') speakText(nextLabel)
+      if (nextPhase === 'work' && nextLabel !== 'Work') {
+        const nextSeg = segs[nextIndex]
+        const key = `${nextSeg.groupIndex}-${nextSeg.exerciseIndex}`
+        const ex = workoutRef.current.exerciseGroups?.[nextSeg.groupIndex]?.exercises?.[nextSeg.exerciseIndex]
+        if (ex?.notes && !spokenNotesRef.current.has(key)) {
+          spokenNotesRef.current.add(key)
+          speakText(`${nextLabel}. ${ex.notes}`)
+        } else {
+          speakText(nextLabel)
+        }
+      }
       setState((s) => ({ ...s, segmentIndex: nextIndex, timeRemaining: dur }))
     }
   }, [clearBeeps, scheduleBeeps])
@@ -191,6 +204,7 @@ export function useTimer(workout: Workout) {
   const reset = useCallback(() => {
     clearBeeps()
     endAtRef.current = 0
+    spokenNotesRef.current.clear()
     setState({ segmentIndex: 0, timeRemaining: segmentsRef.current[0]?.duration ?? 0, isRunning: false, isComplete: false })
   }, [clearBeeps])
 
