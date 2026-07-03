@@ -8,8 +8,11 @@ import { WorkoutDetail } from '@/components/workout/WorkoutDetail'
 import { generateId } from '@/lib/workoutUtils'
 import { exportWorkouts, parseImportFile } from '@/lib/exportImport'
 import { useDrag } from '@/hooks/useDrag'
-import { useDrive } from '@/context/DriveContext'
 import type { Workout, WorkoutType } from '@/types/workout'
+import { TypePickerSheet } from '@/components/home/TypePickerSheet'
+import { OverflowSheet } from '@/components/home/OverflowSheet'
+import { SchedulingSheet, DAYS } from '@/components/home/SchedulingSheet'
+import { SettingsSheet } from '@/components/home/SettingsSheet'
 
 const TYPE_COLOR: Record<string, string> = {
   hiit: '#f0407a',
@@ -48,21 +51,13 @@ function newWorkout(type: WorkoutType): Workout {
   }
 }
 
-const DAYS = [
-  { key: 'mon', short: 'M', label: 'Mon' },
-  { key: 'tue', short: 'T', label: 'Tue' },
-  { key: 'wed', short: 'W', label: 'Wed' },
-  { key: 'thu', short: 'T', label: 'Thu' },
-  { key: 'fri', short: 'F', label: 'Fri' },
-  { key: 'sat', short: 'S', label: 'Sat' },
-  { key: 'sun', short: 'S', label: 'Sun' },
-]
 const JS_TO_KEY = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+
+const DAY_SHORT: Record<string, string> = { mon: 'M', tue: 'T', wed: 'W', thu: 'T', fri: 'F', sat: 'S', sun: 'S' }
 
 export default function HomePage() {
   const router = useRouter()
-  const { workouts, sessions, addWorkout, deleteWorkout, clearHistory, moveWorkout, setSessions, reminderDays, lastBackupAt, reminderSnoozedAt, setReminderDays, setLastBackupAt, setReminderSnoozedAt, schedule, setScheduleDay } = useWorkoutStore()
-  const drive = useDrive()
+  const { workouts, sessions, addWorkout, deleteWorkout, clearHistory, moveWorkout, reminderDays, lastBackupAt, reminderSnoozedAt, setLastBackupAt, setReminderSnoozedAt, schedule } = useWorkoutStore()
   const todayKey = JS_TO_KEY[new Date().getDay()]
 
   const streak = useMemo(() => {
@@ -111,7 +106,6 @@ export default function HomePage() {
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
-  const [tokenCopied, setTokenCopied] = useState(false)
   const importInputRef = useRef<HTMLInputElement>(null)
 
   const handleDeduplicate = () => {
@@ -333,7 +327,7 @@ export default function HomePage() {
       {/* Week schedule strip */}
       <div className="px-6 pt-4 pb-2">
         <div className="flex justify-between">
-          {DAYS.map(({ key, short }) => {
+          {DAYS.map(({ key }) => {
             const assignedId = schedule[key]
             const isRest = assignedId === '__rest__'
             const assignedWorkout = assignedId && !isRest ? workouts.find(w => w.id === assignedId) : null
@@ -345,7 +339,7 @@ export default function HomePage() {
                 className="flex flex-col items-center gap-1.5 py-1 px-1 rounded-xl transition-all"
                 style={{ minWidth: 36, backgroundColor: isToday ? 'rgba(255,255,255,0.05)' : 'transparent' }}
               >
-                <span className="text-[10px] font-semibold" style={{ color: isToday ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)' }}>{short}</span>
+                <span className="text-[10px] font-semibold" style={{ color: isToday ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)' }}>{DAY_SHORT[key]}</span>
                 {isRest ? (
                   <span className="text-[9px] leading-none" style={{ color: 'rgba(255,255,255,0.2)' }}>Zzz</span>
                 ) : (
@@ -650,329 +644,20 @@ export default function HomePage() {
         </svg>
       </button>
 
-      {/* Overflow bottom sheet */}
-      {showOverflow && (
-        <div
-          className="fixed inset-0 z-50 flex items-end"
-          style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
-          onClick={() => setShowOverflow(false)}
-        >
-          <div
-            className="w-full rounded-t-3xl px-4 pt-4"
-            style={{ backgroundColor: '#1a1a26', paddingBottom: 'max(env(safe-area-inset-bottom), 20px)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} />
+      <OverflowSheet
+        isOpen={showOverflow}
+        onClose={() => setShowOverflow(false)}
+        onExport={() => { exportWorkouts(workouts); setLastBackupAt(Date.now()); setShowOverflow(false) }}
+        onImport={() => { importInputRef.current?.click(); setShowOverflow(false) }}
+        onDeduplicate={handleDeduplicate}
+        onSettings={() => { setShowOverflow(false); setShowSettings(true) }}
+      />
 
-            {/* Export */}
-            <button
-              onClick={() => { exportWorkouts(workouts); setLastBackupAt(Date.now()); setShowOverflow(false) }}
-              className="flex items-center gap-4 w-full px-2 py-3.5 rounded-2xl transition-colors active:bg-white/5"
-            >
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }}>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-              </div>
-              <span className="text-base" style={{ color: 'rgba(255,255,255,0.8)' }}>Export workouts</span>
-            </button>
+      <SettingsSheet isOpen={showSettings} onClose={() => setShowSettings(false)} />
 
-            {/* Import */}
-            <button
-              onClick={() => { importInputRef.current?.click(); setShowOverflow(false) }}
-              className="flex items-center gap-4 w-full px-2 py-3.5 rounded-2xl transition-colors active:bg-white/5"
-            >
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }}>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 5 17 10" />
-                  <line x1="12" y1="5" x2="12" y2="17" />
-                </svg>
-              </div>
-              <span className="text-base" style={{ color: 'rgba(255,255,255,0.8)' }}>Import workouts</span>
-            </button>
+      <TypePickerSheet isOpen={showPicker} onClose={() => setShowPicker(false)} onCreate={handleCreate} />
 
-            {/* Deduplicate */}
-            <button
-              onClick={handleDeduplicate}
-              className="flex items-center gap-4 w-full px-2 py-3.5 rounded-2xl transition-colors active:bg-white/5"
-            >
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }}>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="9" y="9" width="13" height="13" rx="2" />
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                  <line x1="17" y1="13" x2="17" y2="19" />
-                  <line x1="14" y1="16" x2="20" y2="16" />
-                </svg>
-              </div>
-              <span className="text-base" style={{ color: 'rgba(255,255,255,0.8)' }}>Remove duplicates</span>
-            </button>
-
-            {/* Settings */}
-            <button
-              onClick={() => { setShowOverflow(false); setShowSettings(true) }}
-              className="flex items-center gap-4 w-full px-2 py-3.5 rounded-2xl transition-colors active:bg-white/5"
-            >
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }}>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                </svg>
-              </div>
-              <span className="text-base" style={{ color: 'rgba(255,255,255,0.8)' }}>Settings</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Settings sheet */}
-      {showSettings && (
-        <div
-          className="fixed inset-0 z-50 flex items-end"
-          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-          onClick={() => setShowSettings(false)}
-        >
-          <div
-            className="w-full rounded-t-3xl px-6 pt-5"
-            style={{ backgroundColor: '#1a1a26', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} />
-
-            {/* GitHub sync */}
-            <p className="text-white/40 text-xs font-semibold tracking-widest uppercase mb-3">GitHub sync</p>
-            {drive.isConnected ? (
-              <div className="rounded-2xl p-4 mb-6" style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}>
-                <div className="flex items-start justify-between gap-3 mb-1">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: drive.status === 'error' ? '#f0407a' : drive.status === 'syncing' ? '#fbbf24' : '#48B256' }} />
-                      <span className="text-white/80 text-sm font-medium">
-                        {drive.status === 'syncing' ? 'Syncing…' : drive.status === 'error' ? 'Sync error' : 'Connected'}
-                      </span>
-                    </div>
-                    <p className="text-white/35 text-xs">{drive.repo}</p>
-                    {drive.lastSynced && (
-                      <p className="text-white/25 text-xs mt-0.5">
-                        Last synced {drive.lastSynced.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-end gap-1.5 shrink-0">
-                    <button
-                      onClick={() => {
-                        drive.loadNow().then((data) => {
-                          if (!data) return
-                          moveWorkout(data.workouts)
-                          setSessions(data.sessions)
-                        }).catch(() => {})
-                      }}
-                      disabled={drive.status === 'syncing'}
-                      className="text-xs text-white/40 hover:text-white/70 transition-colors disabled:opacity-40"
-                    >
-                      Restore from GitHub
-                    </button>
-                    <button
-                      onClick={drive.disconnect}
-                      className="text-xs text-white/25 hover:text-white/50 transition-colors"
-                    >
-                      Disconnect
-                    </button>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    const t = localStorage.getItem('wk_gh_token') ?? ''
-                    navigator.clipboard.writeText(t).then(() => {
-                      setTokenCopied(true)
-                      setTimeout(() => setTokenCopied(false), 2000)
-                    })
-                  }}
-                  className="text-xs text-white/35 hover:text-white/60 transition-colors text-left mt-2"
-                >
-                  {tokenCopied ? '✓ Token copied!' : 'Copy GitHub token'}
-                </button>
-                {drive.error && <p className="text-xs mt-2" style={{ color: '#f0407a' }}>{drive.error}</p>}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 mb-6">
-                <input
-                  value={drive.repo}
-                  onChange={(e) => drive.setRepo(e.target.value)}
-                  placeholder="owner/repo"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  className="w-full px-4 py-3 rounded-2xl text-sm text-white placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-white/20"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
-                />
-                <input
-                  value={drive.token}
-                  onChange={(e) => drive.setToken(e.target.value)}
-                  placeholder="Personal access token (contents: write)"
-                  type="password"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  className="w-full px-4 py-3 rounded-2xl text-sm text-white placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-white/20"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
-                />
-                {drive.error && <p className="text-xs px-1" style={{ color: '#f0407a' }}>{drive.error}</p>}
-                <button
-                  onClick={drive.connect}
-                  disabled={drive.status === 'connecting'}
-                  className="w-full py-3 rounded-2xl text-sm font-semibold transition-all active:scale-95 disabled:opacity-50"
-                  style={{ backgroundColor: '#f0407a', color: '#fff' }}
-                >
-                  {drive.status === 'connecting' ? 'Connecting…' : 'Connect'}
-                </button>
-              </div>
-            )}
-
-            <p className="text-white/40 text-xs font-semibold tracking-widest uppercase mb-4">Backup reminder</p>
-            <div className="flex flex-col gap-1 mb-6">
-              {([
-                { label: 'Every week', days: 7 },
-                { label: 'Every month', days: 30 },
-                { label: 'Every 3 months', days: 90 },
-                { label: 'Never', days: 0 },
-              ] as const).map(({ label, days }) => (
-                <button
-                  key={days}
-                  onClick={() => setReminderDays(days)}
-                  className="flex items-center justify-between py-3.5 px-4 rounded-2xl transition-all"
-                  style={{ backgroundColor: reminderDays === days ? 'rgba(240,64,122,0.12)' : 'rgba(255,255,255,0.04)' }}
-                >
-                  <span className="text-white text-sm font-medium">{label}</span>
-                  {reminderDays === days && (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f0407a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  )}
-                </button>
-              ))}
-            </div>
-            {lastBackupAt > 0 && (
-              <p className="text-white/25 text-xs text-center mb-4">
-                Last backup: {new Date(lastBackupAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </p>
-            )}
-            <button
-              onClick={() => setShowSettings(false)}
-              className="w-full py-3 text-sm transition-colors"
-              style={{ color: 'rgba(255,255,255,0.35)' }}
-            >
-              Done
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Type picker sheet */}
-      {showPicker && (
-        <div
-          className="fixed inset-0 z-50 flex items-end"
-          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-          onClick={() => setShowPicker(false)}
-        >
-          <div
-            className="w-full rounded-t-3xl px-6 pt-6"
-            style={{ backgroundColor: '#1a1a26', paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="w-10 h-1 rounded-full mx-auto mb-6" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />
-            <p className="text-white/40 text-xs font-semibold tracking-widest uppercase mb-4">Workout type</p>
-            <div className="flex flex-col gap-3 max-w-lg mx-auto">
-              <button
-                onClick={() => handleCreate('hiit')}
-                className="flex items-center gap-4 p-4 rounded-2xl text-left transition-all active:scale-98"
-                style={{ backgroundColor: '#1e1e2a' }}
-              >
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(255,80,64,0.15)' }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f0407a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-white font-semibold text-sm">HIIT</p>
-                  <p className="text-white/35 text-xs mt-0.5">High-intensity intervals with timed work and rest</p>
-                </div>
-              </button>
-              <button
-                onClick={() => handleCreate('circuit')}
-                className="flex items-center gap-4 p-4 rounded-2xl text-left transition-all active:scale-98"
-                style={{ backgroundColor: '#1e1e2a' }}
-              >
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(78,143,255,0.15)' }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4e8fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="3" />
-                    <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-white font-semibold text-sm">Circuit</p>
-                  <p className="text-white/35 text-xs mt-0.5">Named exercises performed in sequence</p>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Schedule assignment sheet */}
-      {schedulingDay && (
-        <div className="fixed inset-0 z-50 flex items-end" style={{ backgroundColor: 'rgba(0,0,0,0.55)' }} onClick={() => setSchedulingDay(null)}>
-          <div className="w-full rounded-t-3xl px-4 pt-4 max-h-[70vh] flex flex-col" style={{ backgroundColor: '#1a1a26', paddingBottom: 'max(env(safe-area-inset-bottom), 20px)' }} onClick={e => e.stopPropagation()}>
-            <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} />
-            <p className="text-white/50 text-xs font-semibold tracking-widest uppercase mb-3 px-2">
-              {DAYS.find(d => d.key === schedulingDay)?.label} workout
-            </p>
-            <div className="overflow-y-auto flex-1">
-              {schedule[schedulingDay] && (
-                <button
-                  onClick={() => { setScheduleDay(schedulingDay, null); setSchedulingDay(null) }}
-                  className="flex items-center gap-3 w-full px-2 py-3 rounded-2xl mb-1 transition-colors active:bg-white/5"
-                  style={{ color: 'rgba(239,68,68,0.7)' }}
-                >
-                  <span className="text-sm">Clear day</span>
-                </button>
-              )}
-              <button
-                onClick={() => { setScheduleDay(schedulingDay, '__rest__'); setSchedulingDay(null) }}
-                className="flex items-center gap-3 w-full px-2 py-3 rounded-2xl mb-2 transition-colors active:bg-white/5"
-              >
-                <span className="text-base leading-none">😴</span>
-                <span className="text-sm" style={{ color: schedule[schedulingDay] === '__rest__' ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)' }}>Rest day</span>
-                {schedule[schedulingDay] === '__rest__' && (
-                  <svg className="ml-auto" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                )}
-              </button>
-              {workouts.map(w => {
-                const isAssigned = schedule[schedulingDay] === w.id
-                return (
-                  <button
-                    key={w.id}
-                    onClick={() => { setScheduleDay(schedulingDay, w.id); setSchedulingDay(null) }}
-                    className="flex items-center gap-3 w-full px-2 py-3.5 rounded-2xl transition-colors active:bg-white/5"
-                  >
-                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: w.accentColor ?? '#f0407a' }} />
-                    <span className="flex-1 text-left text-sm" style={{ color: isAssigned ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.65)' }}>{w.name}</span>
-                    {isAssigned && (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={w.accentColor ?? '#f0407a'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+      <SchedulingSheet day={schedulingDay} onClose={() => setSchedulingDay(null)} />
     </div>
   )
 }

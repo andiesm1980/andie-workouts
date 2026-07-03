@@ -104,6 +104,9 @@ export function TimerDisplay({ workout }: Props) {
   const nextGroupExercises = workout.type === 'circuit'
     ? (workout.exerciseGroups ?? [])[timer.currentGroup]?.exercises ?? []
     : []
+  const nextGroupRounds = workout.type === 'circuit'
+    ? ((workout.exerciseGroups ?? [])[timer.currentGroup]?.rounds ?? workout.rounds)
+    : workout.rounds
 
   // Display counters: during break, show the NEXT group/round (not the completed one)
   const displayGroup = timer.phase === 'break' ? timer.currentGroup + 1 : timer.currentGroup
@@ -275,23 +278,33 @@ export function TimerDisplay({ workout }: Props) {
                 ) : timer.phase === 'work' ? (
                   <p className="text-white/40 text-base font-light">{showCounters ? `Round ${timer.currentRound} of ${timer.totalRounds}` : 'Interval'}</p>
                 ) : timer.phase === 'rest' && workout.type === 'circuit' && timer.segments[timer.segmentIndex + 1]?.phase === 'work' ? (
-                  <p className="text-white text-3xl font-semibold leading-snug">Next: {timer.segments[timer.segmentIndex + 1].label}</p>
+                  <>
+                    <p className="text-white text-3xl font-semibold leading-snug">Next: {timer.segments[timer.segmentIndex + 1].label}</p>
+                    {(() => {
+                      const ns = timer.segments[timer.segmentIndex + 1]
+                      const nex = (workout.exerciseGroups ?? [])[ns.groupIndex]?.exercises?.[ns.exerciseIndex]
+                      return nex?.notes ? <p className="text-white/40 text-sm mt-1 italic leading-snug">{nex.notes}</p> : null
+                    })()}
+                  </>
                 ) : timer.phase === 'rest' ? (
                   <p className="text-white/40 text-base font-light">{showCounters ? `Round ${timer.currentRound} of ${timer.totalRounds}` : 'Recover'}</p>
                 ) : timer.phase === 'break' && workout.type === 'circuit' ? (
                   <>
                     <p className="text-white/40 text-sm font-light tracking-wide uppercase">Next superset</p>
-                    <p className="text-white/25 text-xs mt-0.5">{workout.rounds} rounds · {workout.workTime}s work · {workout.restTime}s rest</p>
+                    <p className="text-white/25 text-xs mt-0.5">{nextGroupRounds} rounds · {workout.workTime}s work · {workout.restTime}s rest</p>
                   </>
                 ) : null}
 
                 {/* Circuit exercise list */}
                 {workout.type === 'circuit' && timer.phase === 'break' && nextGroupExercises.length > 0 ? (
-                  <div className="mt-4 flex flex-col gap-2 @[600px]:text-left">
+                  <div className="mt-4 flex flex-col gap-3 @[600px]:text-left">
                     {nextGroupExercises.map((ex) => (
-                      <div key={ex.id} className="flex items-center gap-3 py-1 px-2 rounded-lg -mx-2">
-                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} />
-                        <span className="text-3xl font-semibold leading-snug" style={{ color: 'rgba(255,255,255,0.9)' }}>{ex.name}</span>
+                      <div key={ex.id} className="flex items-start gap-3 py-1 px-2 rounded-lg -mx-2">
+                        <div className="w-2 h-2 rounded-full shrink-0 mt-3" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} />
+                        <div>
+                          <p className="text-3xl font-semibold leading-snug" style={{ color: 'rgba(255,255,255,0.9)' }}>{ex.name}</p>
+                          {ex.notes && <p className="text-white/40 text-sm mt-0.5 italic leading-snug">{ex.notes}</p>}
+                        </div>
                       </div>
                     ))}
                   </div>
