@@ -214,6 +214,25 @@ export function useTimer(workout: Workout) {
     advanceSegment(stateRef.current.segmentIndex, segmentsRef.current)
   }, [advanceSegment, clearBeeps])
 
+  const skipToNextBreak = useCallback(() => {
+    clearBeeps()
+    const segs = segmentsRef.current
+    const { segmentIndex } = stateRef.current
+    let targetIdx = segs.length - 1
+    for (let i = segmentIndex + 1; i < segs.length; i++) {
+      if (segs[i].phase === 'break' || segs[i].phase === 'cooldown') {
+        targetIdx = i
+        break
+      }
+    }
+    const dur = segs[targetIdx].duration
+    endAtRef.current = Date.now() + dur * 1000
+    scheduleBeeps(endAtRef.current)
+    playPhaseStart()
+    haptic('break')
+    setState((s) => ({ ...s, segmentIndex: targetIdx, timeRemaining: dur }))
+  }, [clearBeeps, scheduleBeeps])
+
   const skipToPrev = useCallback(() => {
     clearBeeps()
     const { segmentIndex, timeRemaining } = stateRef.current
@@ -266,5 +285,6 @@ export function useTimer(workout: Workout) {
     reset,
     skipToPrev,
     skipToNext,
+    skipToNextBreak,
   }
 }

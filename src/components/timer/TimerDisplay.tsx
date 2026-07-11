@@ -72,6 +72,7 @@ export function TimerDisplay({ workout }: Props) {
   const toggleSound = () => storeSoundEnabled(!soundEnabled)
   const handleSkipNext = () => { haptic('tap'); timer.skipToNext() }
   const handleSkipPrev = () => { haptic('tap'); timer.skipToPrev() }
+  const handleSkipSuperset = () => { haptic('tap'); timer.skipToNextBreak() }
   const handleQuit = () => { timer.reset(); router.push('/') }
 
   const isSkippable = timer.phase === 'rest' || timer.phase === 'break'
@@ -128,11 +129,14 @@ export function TimerDisplay({ workout }: Props) {
           strokeDasharray={CIRCUMFERENCE} strokeDashoffset={dashOffset} transform="rotate(-90 100 100)"
           style={{ transition: 'stroke-dashoffset 0.9s linear, stroke 0.5s ease', filter: `drop-shadow(0 0 9px ${color}cc)` }} />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ gap: 5 }}>
         <p key={timer.timeRemaining} className="text-white font-light tabular-nums"
           style={{ fontSize: 'clamp(34px, 10.5vw, 52px)', fontVariantNumeric: 'tabular-nums', letterSpacing: '-1px', animation: 'timeStep 0.22s ease-out' }}>
           {formatTime(timer.timeRemaining)}
         </p>
+        {!timer.isComplete && timer.phase !== 'idle' && (
+          <p className="text-xs font-semibold tracking-widest uppercase transition-colors duration-500" style={{ color }}>{label}</p>
+        )}
       </div>
     </div>
   )
@@ -266,8 +270,6 @@ export function TimerDisplay({ workout }: Props) {
               </>
             ) : (
               <>
-                <p className="text-xs font-semibold tracking-widest uppercase mb-2 transition-colors duration-500" style={{ color }}>{label}</p>
-
                 {timer.phase === 'work' && workout.type === 'circuit' ? (
                   <>
                     <p className="text-white text-3xl font-semibold leading-snug">{timer.exerciseName}</p>
@@ -302,7 +304,7 @@ export function TimerDisplay({ workout }: Props) {
                       <div key={ex.id} className="flex items-start gap-3 py-1 px-2 rounded-lg -mx-2">
                         <div className="w-2 h-2 rounded-full shrink-0 mt-3" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} />
                         <div>
-                          <p className="text-3xl font-semibold leading-snug" style={{ color: 'rgba(255,255,255,0.9)' }}>{ex.name}</p>
+                          <p className="text-2xl font-semibold leading-snug" style={{ color: 'rgba(255,255,255,0.9)' }}>{ex.name}</p>
                           {ex.notes && <p className="text-white/40 text-sm mt-0.5 italic leading-snug">{ex.notes}</p>}
                         </div>
                       </div>
@@ -378,6 +380,16 @@ export function TimerDisplay({ workout }: Props) {
                     <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6h2v12h-2z" /></svg>
                   </button>
                 </div>
+
+                {/* Skip superset — circuit only, during break/work/rest */}
+                {workout.type === 'circuit' && (timer.phase === 'break' || timer.phase === 'work' || timer.phase === 'rest') && (
+                  <button
+                    onClick={handleSkipSuperset}
+                    className="w-full text-center text-white/20 text-xs tracking-wide transition-colors active:text-white/50 mb-4"
+                  >
+                    Skip superset →
+                  </button>
+                )}
 
                 {/* Progress bar footer */}
                 <div className="flex items-center gap-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
