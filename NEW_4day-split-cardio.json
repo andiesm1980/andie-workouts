@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "workouts": [
+    {
+      "id": "split4-tue-easyjog",
+      "name": "NEW 4day Split · Easy Jog (Tue)",
+      "type": "run",
+      "workTime": 60,
+      "restTime": 0,
+      "intervals": 1,
+      "rounds": 1,
+      "cycleBreak": 0,
+      "warmup": 10,
+      "cooldown": 0,
+      "accentColor": "#84cc16",
+      "notes": "Aerobic base day. It should feel easy: you should be able to talk in full sentences while jogging.\n\nOutside if possible; treadmill on rainy days or when short on time.\n\nMain block is 30 min — adjust between 25 and 35 min.",
+      "exerciseGroups": [
+        {
+          "id": "split4-tue-g1-warmup",
+          "exercises": [
+            { "id": "split4-tue-e1", "name": "Brisk walk", "pace": "walk", "workTime": 300, "notes": "Warm up at a brisk pace." }
+          ]
+        },
+        {
+          "id": "split4-tue-g2-main",
+          "exercises": [
+            { "id": "split4-tue-e2", "name": "Easy jog", "pace": "jog", "workTime": 1800, "notes": "Continuous jog, a lot slower than your interval base jog. You should be able to talk in full sentences." }
+          ]
+        },
+        {
+          "id": "split4-tue-g3-cooldown",
+          "exercises": [
+            { "id": "split4-tue-e3", "name": "Walk", "pace": "walk", "workTime": 300, "notes": "Cool down." }
+          ]
+        }
+      ],
+      "createdAt": 1795478400000
+    },
+    {
+      "id": "split4-thu-intervals",
+      "name": "NEW 4day Split · Intervals (Thu)",
+      "type": "run",
+      "workTime": 60,
+      "restTime": 0,
+      "intervals": 1,
+      "rounds": 1,
+      "cycleBreak": 0,
+      "warmup": 10,
+      "cooldown": 0,
+      "accentColor": "#84cc16",
+      "notes": "Intervals: 7 × (1 min fast + 3 min base jog). The fast part is about 2 km/h above your base jog.\n\nProgression: every 1–2 weeks, slightly raise the fast speed OR add one interval — never both at once.",
+      "exerciseGroups": [
+        {
+          "id": "split4-thu-g1-warmup",
+          "exercises": [
+            { "id": "split4-thu-e1", "name": "Walk", "pace": "walk", "workTime": 180, "notes": "Warm up." },
+            { "id": "split4-thu-e2", "name": "Easy jog", "pace": "jog", "workTime": 300, "notes": "Easy jog to finish the warm up." }
+          ]
+        },
+        {
+          "id": "split4-thu-g2-intervals",
+          "rounds": 7,
+          "exercises": [
+            { "id": "split4-thu-e3", "name": "Fast", "pace": "run", "workTime": 60, "notes": "About 2 kilometers per hour above your base jog." },
+            { "id": "split4-thu-e4", "name": "Base jog", "pace": "jog", "workTime": 180, "notes": "Back to your base jog pace." }
+          ]
+        },
+        {
+          "id": "split4-thu-g3-cooldown",
+          "exercises": [
+            { "id": "split4-thu-e5", "name": "Walk", "pace": "walk", "workTime": 240, "notes": "Cool down, 3 to 5 minutes." }
+          ]
+        }
+      ],
+      "createdAt": 1795478400001
+    },
+    {
+      "id": "split4-sat-inclinewalk",
+      "name": "NEW 4day Split · Incline Walk 12-5-30 (Sat)",
+      "type": "run",
+      "workTime": 60,
+      "restTime": 0,
+      "intervals": 1,
+      "rounds": 1,
+      "cycleBreak": 0,
+      "warmup": 10,
+      "cooldown": 0,
+      "accentColor": "#84cc16",
+      "notes": "Saturday after Lower 2. Treadmill: 12% incline · 5 km/h · 30 min.\n\nDon't hold the rails; stand tall and take steady steps.",
+      "exerciseGroups": [
+        {
+          "id": "split4-sat-g1-incline",
+          "exercises": [
+            { "id": "split4-sat-e1", "name": "Incline walk", "pace": "walk", "workTime": 1800, "notes": "12 percent incline, 5 kilometers per hour. Don't hold the rails." }
+          ]
+        }
+      ],
+      "createdAt": 1795478400002
+    }
+  ]
+}
