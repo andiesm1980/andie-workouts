@@ -44,3 +44,16 @@ export interface Workout {
   notes?: string
   createdAt: number
 }
+
+export interface Reminder {
+  id: string
+  title: string
+  message: string
+  startAt: number        // first occurrence, timestamp ms
+  repeatWeeks?: number   // repeat every N weeks; undefined = once
+  workoutIds: string[]   // workouts that show this reminder's banner
+  dueAt: number          // current occurrence, timestamp ms
+  snoozedUntil?: number  // hidden until this time
+  completed?: boolean    // one-off reminder marked done
+  createdAt: number
+}

@@ -2,7 +2,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Workout, CompletedSession } from '@/types/workout'
+import type { Workout, CompletedSession, Reminder } from '@/types/workout'
 
 const DEFAULT_WORKOUTS: Workout[] = [
   {
@@ -65,6 +65,33 @@ const DEFAULT_WORKOUTS: Workout[] = [
   },
 ]
 
+function seedReminders(): Reminder[] {
+  const volume = new Date(2026, 11, 23, 8, 45).getTime()
+  const deload = new Date(2027, 0, 4, 7, 45).getTime()
+  return [
+    {
+      id: 'reminder-volume-review',
+      title: 'Revisión de volumen',
+      message: '¿Qué grupo muscular no avanzó en peso ni repeticiones? Sumale 2–3 series por semana, sin pasar de 20.',
+      startAt: volume,
+      repeatWeeks: 6,
+      workoutIds: [],
+      dueAt: volume,
+      createdAt: Date.now(),
+    },
+    {
+      id: 'reminder-deload-week',
+      title: 'Semana de descarga',
+      message: 'Esta semana: mitad de series, mismo peso. Carreras suaves, sin intervalos.',
+      startAt: deload,
+      repeatWeeks: 7,
+      workoutIds: [],
+      dueAt: deload,
+      createdAt: Date.now(),
+    },
+  ]
+}
+
 interface WorkoutStore {
   workouts: Workout[]
   sessions: CompletedSession[]
@@ -74,6 +101,7 @@ interface WorkoutStore {
   lastBackupAt: number        // ms timestamp of last real export
   reminderSnoozedAt: number   // ms timestamp of last dismiss (without export)
   schedule: Record<string, string> // day key → workout id or '__rest__'
+  reminders: Reminder[]
   addWorkout: (workout: Workout) => void
   updateWorkout: (id: string, updates: Partial<Workout>) => void
   deleteWorkout: (id: string) => void
@@ -88,6 +116,10 @@ interface WorkoutStore {
   setLastBackupAt: (ts: number) => void
   setReminderSnoozedAt: (ts: number) => void
   setScheduleDay: (day: string, workoutId: string | null) => void
+  addReminder: (reminder: Reminder) => void
+  updateReminder: (id: string, updates: Partial<Reminder>) => void
+  deleteReminder: (id: string) => void
+  setReminders: (reminders: Reminder[]) => void
 }
 
 export const useWorkoutStore = create<WorkoutStore>()(
@@ -101,6 +133,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
       lastBackupAt: 0,
       reminderSnoozedAt: 0,
       schedule: {},
+      reminders: seedReminders(),
       addWorkout: (workout) =>
         set((state) => ({ workouts: [workout, ...state.workouts] })),
       updateWorkout: (id, updates) =>
@@ -113,6 +146,9 @@ export const useWorkoutStore = create<WorkoutStore>()(
         set((state) => ({
           workouts: state.workouts.filter((w) => w.id !== id),
           sessions: state.sessions.filter((s) => s.workoutId !== id),
+          reminders: state.reminders.map((r) =>
+            r.workoutIds.includes(id) ? { ...r, workoutIds: r.workoutIds.filter((wid) => wid !== id) } : r
+          ),
         })),
       recordSession: (session) =>
         set((state) => ({
@@ -146,12 +182,21 @@ export const useWorkoutStore = create<WorkoutStore>()(
           else next[day] = workoutId
           return { schedule: next }
         }),
+      addReminder: (reminder) =>
+        set((state) => ({ reminders: [...state.reminders, reminder] })),
+      updateReminder: (id, updates) =>
+        set((state) => ({
+          reminders: state.reminders.map((r) => (r.id === id ? { ...r, ...updates } : r)),
+        })),
+      deleteReminder: (id) =>
+        set((state) => ({ reminders: state.reminders.filter((r) => r.id !== id) })),
+      setReminders: (reminders) => set({ reminders }),
     }),
     {
       name: 'my-workouts-store',
-      version: 8,
+      version: 9,
       migrate: (persisted: unknown, fromVersion: number) => {
-        const state = persisted as { workouts: any[]; sessions?: any[]; soundEnabled?: boolean; voiceEnabled?: boolean; reminderDays?: number; lastBackupAt?: number; reminderSnoozedAt?: number; schedule?: Record<string, string> }
+        const state = persisted as { workouts: any[]; sessions?: any[]; soundEnabled?: boolean; voiceEnabled?: boolean; reminderDays?: number; lastBackupAt?: number; reminderSnoozedAt?: number; schedule?: Record<string, string>; reminders?: Reminder[] }
 
         if (fromVersion < 2) {
           state.workouts = (state.workouts ?? []).map((w: any) => ({
@@ -198,6 +243,10 @@ export const useWorkoutStore = create<WorkoutStore>()(
 
         if (fromVersion < 8) {
           state.voiceEnabled = (state as any).voiceEnabled ?? true
+        }
+
+        if (fromVersion < 9) {
+          state.reminders = state.reminders ?? seedReminders()
         }
 
         return state

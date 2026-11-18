@@ -7,9 +7,10 @@ interface Props {
   onImport: () => void
   onDeduplicate: () => void
   onSettings: () => void
+  onReminders: () => void
 }
 
-export function OverflowSheet({ isOpen, onClose, onExport, onImport, onDeduplicate, onSettings }: Props) {
+export function OverflowSheet({ isOpen, onClose, onExport, onImport, onDeduplicate, onSettings, onReminders }: Props) {
   if (!isOpen) return null
   return (
     <div
@@ -23,6 +24,19 @@ export function OverflowSheet({ isOpen, onClose, onExport, onImport, onDeduplica
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} />
+
+        <button
+          onClick={onReminders}
+          className="flex items-center gap-4 w-full px-2 py-3.5 rounded-2xl transition-colors active:bg-white/5"
+        >
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+          </div>
+          <span className="text-base" style={{ color: 'rgba(255,255,255,0.8)' }}>Reminders</span>
+        </button>
 
         <button
           onClick={onExport}

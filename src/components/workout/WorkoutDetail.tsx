@@ -8,6 +8,8 @@ import { TimerSettingsTab } from './TimerSettingsTab'
 import { ExercisesTab } from './ExercisesTab'
 import { computeTotalTime, formatDuration, generateId, accentText, usesGroups } from '@/lib/workoutUtils'
 import { shareUrl } from '@/lib/shareWorkout'
+import { ReminderBanner } from '@/components/reminders/ReminderBanner'
+import { useActiveReminders } from '@/hooks/useActiveReminders'
 
 type Tab = 'timer' | 'exercises'
 
@@ -32,6 +34,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
   const nameRef = useRef<HTMLInputElement>(null)
   const cancelEditRef = useRef(false)
   const initialRef = useRef<Workout>(initial)
+  const reminders = useActiveReminders(initial.id)
 
   const accent = workout.accentColor ?? '#f0407a'
 
@@ -236,6 +239,19 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
 
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto relative z-10">
+        {reminders.active.length > 0 && (
+          <div className="px-5 pt-4 flex flex-col gap-2">
+            {reminders.active.map((r) => (
+              <ReminderBanner
+                key={r.id}
+                reminder={r}
+                accent={accent}
+                onDone={() => reminders.markDone(r)}
+                onSnooze={() => reminders.snooze(r)}
+              />
+            ))}
+          </div>
+        )}
         {activeTab === 'timer' ? (
           <TimerSettingsTab workout={workout} onChange={update} />
         ) : (

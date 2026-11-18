@@ -13,6 +13,9 @@ import { TypePickerSheet } from '@/components/home/TypePickerSheet'
 import { OverflowSheet } from '@/components/home/OverflowSheet'
 import { SchedulingSheet, DAYS } from '@/components/home/SchedulingSheet'
 import { SettingsSheet } from '@/components/home/SettingsSheet'
+import { RemindersSheet } from '@/components/home/RemindersSheet'
+import { ReminderBanner } from '@/components/reminders/ReminderBanner'
+import { useActiveReminders } from '@/hooks/useActiveReminders'
 
 const TYPE_COLOR: Record<string, string> = {
   hiit: '#f0407a',
@@ -133,6 +136,8 @@ export default function HomePage() {
   const [showHistory, setShowHistory] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showOverflow, setShowOverflow] = useState(false)
+  const [showReminders, setShowReminders] = useState(false)
+  const activeReminders = useActiveReminders()
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -328,6 +333,25 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {/* Training reminders that are due */}
+      {activeReminders.active.length > 0 && (
+        <div className="mx-6 mb-3 flex flex-col gap-2">
+          {activeReminders.active.map((r) => {
+            // Linked reminders match their workout page's accent; unlinked ones use amber
+            const linked = workouts.find((w) => r.workoutIds.includes(w.id))
+            return (
+              <ReminderBanner
+                key={r.id}
+                reminder={r}
+                accent={linked ? (linked.accentColor ?? '#f0407a') : '#fbbf24'}
+                onDone={() => activeReminders.markDone(r)}
+                onSnooze={() => activeReminders.snooze(r)}
+              />
+            )
+          })}
+        </div>
+      )}
 
       {/* Backup reminder banner */}
       {reminderDue && (
@@ -682,7 +706,10 @@ export default function HomePage() {
         onImport={() => { importInputRef.current?.click(); setShowOverflow(false) }}
         onDeduplicate={handleDeduplicate}
         onSettings={() => { setShowOverflow(false); setShowSettings(true) }}
+        onReminders={() => { setShowOverflow(false); setShowReminders(true) }}
       />
+
+      <RemindersSheet isOpen={showReminders} onClose={() => setShowReminders(false)} />
 
       <SettingsSheet isOpen={showSettings} onClose={() => setShowSettings(false)} />
 

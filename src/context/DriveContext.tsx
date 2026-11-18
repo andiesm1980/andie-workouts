@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react'
-import type { Workout, CompletedSession } from '@/types/workout'
+import type { Workout, CompletedSession, Reminder } from '@/types/workout'
 
 const CONNECTED_KEY = 'wk_gh_connected'
 const REPO_KEY      = 'wk_gh_repo'
@@ -69,6 +69,7 @@ export type DriveStatus = 'idle' | 'connecting' | 'syncing' | 'error'
 export interface WorkoutsPayload {
   workouts: Workout[]
   sessions: CompletedSession[]
+  reminders?: Reminder[] // absent in files saved before reminders existed
 }
 
 interface DriveCtx {
@@ -171,8 +172,8 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
       setStatus('idle')
       if (!result) return null
       localStorage.setItem(SHA_KEY, result.sha)
-      const d = result.data as { workouts?: Workout[]; sessions?: CompletedSession[] }
-      return { workouts: d.workouts ?? [], sessions: d.sessions ?? [] }
+      const d = result.data as { workouts?: Workout[]; sessions?: CompletedSession[]; reminders?: Reminder[] }
+      return { workouts: d.workouts ?? [], sessions: d.sessions ?? [], reminders: d.reminders }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Load failed')
       setStatus('error')

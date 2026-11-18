@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function SettingsSheet({ isOpen, onClose }: Props) {
-  const { workouts, sessions, reminderDays, lastBackupAt, setReminderDays, setLastBackupAt, moveWorkout, setSessions } = useWorkoutStore()
+  const { workouts, sessions, reminderDays, lastBackupAt, setReminderDays, setLastBackupAt, moveWorkout, setSessions, setReminders } = useWorkoutStore()
   const drive = useDrive()
   const [tokenCopied, setTokenCopied] = useState(false)
 
@@ -54,6 +54,7 @@ export function SettingsSheet({ isOpen, onClose }: Props) {
                       if (!data) return
                       moveWorkout(data.workouts)
                       setSessions(data.sessions)
+                      if (data.reminders) setReminders(data.reminders)
                     }).catch(() => {})
                   }}
                   disabled={drive.status === 'syncing'}
