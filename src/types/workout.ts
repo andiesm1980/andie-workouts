@@ -1,4 +1,5 @@
-export type WorkoutType = 'hiit' | 'circuit'
+export type WorkoutType = 'hiit' | 'circuit' | 'run'
+export type Pace = 'walk' | 'jog' | 'run'
 export type Phase = 'idle' | 'warmup' | 'work' | 'rest' | 'break' | 'cooldown' | 'complete'
 
 export interface Exercise {
@@ -7,6 +8,7 @@ export interface Exercise {
   workTime?: number // overrides workout.workTime when set
   restTime?: number // overrides workout.restTime when set
   notes?: string
+  pace?: Pace // run workouts only
 }
 
 export interface CompletedSession {

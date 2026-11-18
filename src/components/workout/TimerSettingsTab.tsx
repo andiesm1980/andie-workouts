@@ -27,6 +27,7 @@ export function TimerSettingsTab({ workout, onChange }: Props) {
   )
   const [warmCoolOpen, setWarmCoolOpen] = useState((workout.cooldown || 0) > 0)
 
+  const isRun = workout.type === 'run'
   const ACCENT_COLORS = ['#f0407a', '#4e8fff', '#ff6b2b', '#84cc16', '#a87dff']
   const activeAccent = workout.accentColor ?? '#f0407a'
 
@@ -55,15 +56,17 @@ export function TimerSettingsTab({ workout, onChange }: Props) {
         </div>
       </div>
 
-      <Row label="Work">
+      <Row label={isRun ? 'Default step' : 'Work'}>
         <StepInput value={workout.workTime} onChange={(v) => onChange({ workTime: v })}
           min={5} max={3600} step={5} format="time" />
       </Row>
 
-      <Row label="Rest">
-        <StepInput value={workout.restTime} onChange={(v) => onChange({ restTime: v })}
-          min={0} max={3600} step={5} format="time" />
-      </Row>
+      {!isRun && (
+        <Row label="Rest">
+          <StepInput value={workout.restTime} onChange={(v) => onChange({ restTime: v })}
+            min={0} max={3600} step={5} format="time" />
+        </Row>
+      )}
 
       {workout.type === 'hiit' && (
         <Row label="Intervals">
@@ -120,7 +123,7 @@ export function TimerSettingsTab({ workout, onChange }: Props) {
                 </svg>
               )}
             </button>
-            <span className="text-white text-base">Sets</span>
+            <span className="text-white text-base">{isRun ? 'Repeats' : 'Sets'}</span>
           </div>
           <StepInput
             value={workout.rounds}

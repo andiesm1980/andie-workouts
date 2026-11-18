@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import type { Workout, Phase } from '@/types/workout'
 import { playCountdownBeep, playPhaseStart, playComplete, speakText } from '@/lib/audio'
 import { haptic } from '@/lib/haptics'
+import { usesGroups } from '@/lib/workoutUtils'
 
 interface Segment {
   phase: Exclude<Phase, 'idle' | 'complete'>
@@ -218,9 +219,14 @@ export function useTimer(workout: Workout) {
     clearBeeps()
     const segs = segmentsRef.current
     const { segmentIndex } = stateRef.current
+    // During a break the upcoming group is the one being skipped
+    const cur = segs[segmentIndex]
+    const skipGroup = cur.phase === 'break' ? cur.groupIndex + 1 : cur.groupIndex
     let targetIdx = segs.length - 1
     for (let i = segmentIndex + 1; i < segs.length; i++) {
-      if (segs[i].phase === 'break' || segs[i].phase === 'cooldown') {
+      const seg = segs[i]
+      // Land on the break after the skipped group, or the next group's first segment when there's no break
+      if (seg.phase === 'cooldown' || seg.groupIndex > skipGroup || (seg.phase === 'break' && seg.groupIndex === skipGroup)) {
         targetIdx = i
         break
       }
@@ -260,7 +266,7 @@ export function useTimer(workout: Workout) {
   const progress = 1 - state.timeRemaining / totalDuration
 
   const effectiveGroupRounds =
-    workout.type === 'circuit' && (currentSegment?.groupIndex ?? -1) >= 0
+    usesGroups(workout) && (currentSegment?.groupIndex ?? -1) >= 0
       ? ((workout.exerciseGroups ?? [])[currentSegment?.groupIndex ?? 0]?.rounds ?? workout.rounds)
       : workout.rounds
 

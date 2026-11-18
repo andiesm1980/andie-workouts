@@ -55,6 +55,22 @@ export function TypePickerSheet({ isOpen, onClose, onCreate }: Props) {
               <p className="text-white/35 text-xs mt-0.5">Named exercises performed in sequence</p>
             </div>
           </button>
+          <button
+            onClick={() => onCreate('run')}
+            className="flex items-center gap-4 p-4 rounded-2xl text-left transition-all active:scale-98"
+            style={{ backgroundColor: '#1e1e2a' }}
+          >
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(132,204,22,0.15)' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#84cc16" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="14" cy="4" r="2" />
+                <path d="M8 21l3-6 3 2v5M6 12l3-3 4 1 3 3 3 1M11 15l-1-5" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-white font-semibold text-sm">Run / Walk</p>
+              <p className="text-white/35 text-xs mt-0.5">Walk warm-up, run intervals, jog cool-down</p>
+            </div>
+          </button>
         </div>
       </div>
     </div>

@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import type { Workout, ExerciseGroup, Exercise } from '@/types/workout'
-import { generateId } from '@/lib/workoutUtils'
+import type { Workout, ExerciseGroup, Exercise, Pace } from '@/types/workout'
+import { generateId, PACES, PACE_COLOR, PACE_LABEL } from '@/lib/workoutUtils'
 import { useDrag } from '@/hooks/useDrag'
 
 interface Props {
@@ -22,6 +22,12 @@ function DragDots({ small }: { small?: boolean }) {
       )}
     </svg>
   )
+}
+
+// Run steps show durations as m:ss since they're usually minutes long
+function fmtStep(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`
+  return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`
 }
 
 interface ExDragState { groupId: string; exId: string; fromIdx: number }
@@ -46,6 +52,7 @@ export function ExercisesTab({ workout, onChange }: Props) {
   const rowEls = useRef<Map<string, HTMLElement>>(new Map())
   const groupEls = useRef<Map<string, HTMLElement>>(new Map())
 
+  const isRun = workout.type === 'run'
   const groups = workout.exerciseGroups ?? []
   const groupsRef = useRef(groups)
   groupsRef.current = groups
@@ -171,6 +178,13 @@ export function ExercisesTab({ workout, onChange }: Props) {
   const addExercise = (groupId: string) => {
     const group = groups.find((g) => g.id === groupId)
     if (!group) return
+    if (isRun) {
+      // Alternate run/walk so building intervals is a couple of taps
+      const last = group.exercises[group.exercises.length - 1]
+      const pace: Pace = last?.pace === 'run' ? 'walk' : 'run'
+      updateGroup(groupId, [...group.exercises, { id: generateId(), name: PACE_LABEL[pace], pace }])
+      return
+    }
     const newEx: Exercise = { id: generateId(), name: '' }
     updateGroup(groupId, [...group.exercises, newEx])
     setEditingId(newEx.id)
@@ -191,6 +205,14 @@ export function ExercisesTab({ workout, onChange }: Props) {
     if (editingExtra?.id === exId) setEditingExtra(null)
   }
 
+  const cyclePace = (groupId: string, ex: Exercise) => {
+    const current = ex.pace ?? 'walk'
+    const next = PACES[(PACES.indexOf(current) + 1) % PACES.length]
+    // Keep the name in sync unless it was customised
+    const keepName = ex.name && ex.name !== PACE_LABEL[current]
+    updateExercise(groupId, ex.id, { pace: next, ...(keepName ? {} : { name: PACE_LABEL[next] }) })
+  }
+
   const commitEdit = (groupId: string, exId: string, name: string) => {
     if (!name.trim()) removeExercise(groupId, exId)
     else updateExercise(groupId, exId, { name: name.trim() })
@@ -203,7 +225,7 @@ export function ExercisesTab({ workout, onChange }: Props) {
   return (
     <div className="px-5 pb-8" style={{ userSelect: isDraggingAny ? 'none' : undefined }}>
       {groups.length === 0 && (
-        <p className="text-white/25 text-sm py-8 text-center">No supersets yet. Add one below.</p>
+        <p className="text-white/25 text-sm py-8 text-center">No {isRun ? 'blocks' : 'supersets'} yet. Add one below.</p>
       )}
 
       {groups.map((group, gIdx) => {
@@ -234,7 +256,7 @@ export function ExercisesTab({ workout, onChange }: Props) {
                 <DragDots small />
               </div>
               <span className="flex-1 text-xs font-semibold tracking-widest uppercase" style={{ color: '#4e8fff' }}>
-                Superset {gIdx + 1}
+                {isRun ? 'Block' : 'Superset'} {gIdx + 1}
               </span>
               <button
                 onClick={() => { setEditingGroupRounds(group.id); setTimeout(() => groupRoundsInputRef.current?.focus(), 50) }}
@@ -250,7 +272,7 @@ export function ExercisesTab({ workout, onChange }: Props) {
                 <button
                   onClick={() => deleteGroup(group.id)}
                   className="text-white/15 hover:text-red-400/60 transition-colors p-1 -mr-1"
-                  aria-label="Delete superset"
+                  aria-label={isRun ? 'Delete block' : 'Delete superset'}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -263,7 +285,7 @@ export function ExercisesTab({ workout, onChange }: Props) {
 
             {editingGroupRounds === group.id && (
               <div className="flex items-center gap-3 py-2 pl-1 mb-1">
-                <span className="text-white/30 text-xs">Sets:</span>
+                <span className="text-white/30 text-xs">{isRun ? 'Repeats:' : 'Sets:'}</span>
                 <input
                   ref={groupRoundsInputRef}
                   type="number"
@@ -280,7 +302,7 @@ export function ExercisesTab({ workout, onChange }: Props) {
                     if (e.key === 'Escape') setEditingGroupRounds(null)
                   }}
                 />
-                <span className="text-white/30 text-xs">sets</span>
+                <span className="text-white/30 text-xs">{isRun ? 'times' : 'sets'}</span>
                 {group.rounds !== undefined && (
                   <button
                     onPointerDown={(e) => { e.preventDefault(); updateGroupRounds(group.id, undefined); setEditingGroupRounds(null) }}
@@ -293,7 +315,7 @@ export function ExercisesTab({ workout, onChange }: Props) {
             )}
 
             {group.exercises.length === 0 && (
-              <p className="text-white/20 text-sm py-3 pl-1">No exercises yet</p>
+              <p className="text-white/20 text-sm py-3 pl-1">No {isRun ? 'steps' : 'exercises'} yet</p>
             )}
 
             {group.exercises.map((ex, exIdx) => {
@@ -342,12 +364,23 @@ export function ExercisesTab({ workout, onChange }: Props) {
                       <DragDots />
                     </div>
 
+                    {isRun && (
+                      <button
+                        onClick={() => cyclePace(group.id, ex)}
+                        className="shrink-0 w-12 py-1 rounded-lg text-xs font-semibold transition-colors"
+                        style={{ backgroundColor: PACE_COLOR[ex.pace ?? 'walk'] + '22', color: PACE_COLOR[ex.pace ?? 'walk'] }}
+                        aria-label={`Pace: ${PACE_LABEL[ex.pace ?? 'walk']}. Tap to change`}
+                      >
+                        {PACE_LABEL[ex.pace ?? 'walk']}
+                      </button>
+                    )}
+
                     {editingId === ex.id ? (
                       <input
                         ref={inputRef}
                         className="flex-1 bg-transparent text-white text-base focus:outline-none border-b border-white/30 pb-0.5"
                         defaultValue={ex.name}
-                        placeholder="Exercise name"
+                        placeholder={isRun ? 'Step name' : 'Exercise name'}
                         onBlur={(e) => commitEdit(group.id, ex.id, e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') commitEdit(group.id, ex.id, e.currentTarget.value)
@@ -372,7 +405,9 @@ export function ExercisesTab({ workout, onChange }: Props) {
                         color: hasCustomWork ? '#f0407a' : 'rgba(255,255,255,0.25)',
                       }}
                     >
-                      {hasCustomWork ? `${ex.workTime}s` : `${workout.workTime}s`}
+                      {isRun
+                        ? fmtStep(ex.workTime ?? workout.workTime)
+                        : hasCustomWork ? `${ex.workTime}s` : `${workout.workTime}s`}
                     </button>
 
                     <button
@@ -399,15 +434,18 @@ export function ExercisesTab({ workout, onChange }: Props) {
 
                   {isEditingWork && (
                     <div className="flex items-center gap-3 pb-3 pl-10">
-                      <span className="text-white/30 text-xs">Work time:</span>
+                      <span className="text-white/30 text-xs">{isRun ? 'Duration:' : 'Work time:'}</span>
                       <input
                         ref={extraInputRef}
                         type="number"
-                        min={5} max={3600} step={5}
-                        defaultValue={ex.workTime ?? workout.workTime}
+                        inputMode={isRun ? 'decimal' : 'numeric'}
+                        min={isRun ? 0.25 : 5} max={isRun ? 120 : 3600} step={isRun ? 0.25 : 5}
+                        defaultValue={isRun ? (ex.workTime ?? workout.workTime) / 60 : ex.workTime ?? workout.workTime}
                         className="w-16 bg-transparent text-white text-sm text-center focus:outline-none border-b border-white/30"
                         onBlur={(e) => {
-                          const val = parseInt(e.target.value)
+                          // Run steps are entered in minutes (e.g. 1.5), everything else in seconds
+                          const raw = parseFloat(e.target.value)
+                          const val = isRun ? Math.round(raw * 60) : Math.trunc(raw)
                           if (!isNaN(val) && val >= 5) updateExercise(group.id, ex.id, { workTime: val })
                           setEditingExtra(null)
                         }}
@@ -416,7 +454,7 @@ export function ExercisesTab({ workout, onChange }: Props) {
                           if (e.key === 'Escape') setEditingExtra(null)
                         }}
                       />
-                      <span className="text-white/30 text-xs">sec</span>
+                      <span className="text-white/30 text-xs">{isRun ? 'min' : 'sec'}</span>
                       {hasCustomWork && (
                         <button
                           onPointerDown={(e) => { e.preventDefault(); updateExercise(group.id, ex.id, { workTime: undefined }); setEditingExtra(null) }}
@@ -509,7 +547,7 @@ export function ExercisesTab({ workout, onChange }: Props) {
               className="flex items-center gap-3 py-3 text-white/30 hover:text-white/55 transition-colors"
             >
               <span className="text-lg font-light leading-none">+</span>
-              <span className="text-sm">Add exercise</span>
+              <span className="text-sm">{isRun ? 'Add step' : 'Add exercise'}</span>
             </button>
 
           </div>
@@ -531,7 +569,7 @@ export function ExercisesTab({ workout, onChange }: Props) {
           onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
         >
           <span className="text-xl font-light leading-none">+</span>
-          <span className="text-sm font-medium">Add superset</span>
+          <span className="text-sm font-medium">{isRun ? 'Add block' : 'Add superset'}</span>
         </button>
       </div>
     </div>

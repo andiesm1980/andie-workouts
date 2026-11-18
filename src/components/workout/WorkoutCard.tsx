@@ -7,6 +7,7 @@ import { computeTotalTime, formatDuration } from '@/lib/workoutUtils'
 const TYPE_COLOR: Record<string, string> = {
   hiit: '#f0407a',
   circuit: '#4e8fff',
+  run: '#84cc16',
 }
 
 const DELETE_REVEAL = 72
@@ -24,7 +25,10 @@ export function WorkoutCard({ workout, onSelect, selected, onDelete, onDragHandl
   const total = computeTotalTime(workout)
   const exCount = workout.type === 'circuit'
     ? (workout.exerciseGroups ?? []).flatMap((g) => g.exercises ?? []).length
-    : null
+    : workout.type === 'run'
+      ? (workout.exerciseGroups ?? []).length
+      : null
+  const countWord = workout.type === 'run' ? 'block' : 'exercise'
 
   const [offset, setOffset] = useState(0)
   const [revealed, setRevealed] = useState(false)
@@ -78,7 +82,7 @@ export function WorkoutCard({ workout, onSelect, selected, onDelete, onDragHandl
 
   const isAnimating = !swipe.current
 
-  const typeLabel = workout.type === 'hiit' ? 'HIIT' : 'Circuit'
+  const typeLabel = workout.type === 'hiit' ? 'HIIT' : workout.type === 'run' ? 'Run' : 'Circuit'
 
   return (
     <div
@@ -174,9 +178,9 @@ export function WorkoutCard({ workout, onSelect, selected, onDelete, onDragHandl
                   {workout.rounds} rounds · {workout.workTime}s / {workout.restTime}s
                 </span>
               )}
-              {workout.type === 'circuit' && exCount !== null && exCount > 0 && (
+              {workout.type !== 'hiit' && exCount !== null && exCount > 0 && (
                 <span className="hidden sm:inline text-white/25 text-xs truncate">
-                  {exCount} exercise{exCount !== 1 ? 's' : ''}
+                  {exCount} {countWord}{exCount !== 1 ? 's' : ''}
                 </span>
               )}
 
@@ -185,7 +189,7 @@ export function WorkoutCard({ workout, onSelect, selected, onDelete, onDragHandl
                 {workout.type === 'hiit'
                   ? `${workout.rounds} rounds · ${workout.workTime}s / ${workout.restTime}s · ${formatDuration(total)}`
                   : exCount !== null && exCount > 0
-                    ? `${exCount} exercise${exCount !== 1 ? 's' : ''} · ${formatDuration(total)}`
+                    ? `${exCount} ${countWord}${exCount !== 1 ? 's' : ''} · ${formatDuration(total)}`
                     : formatDuration(total)}
               </span>
             </div>

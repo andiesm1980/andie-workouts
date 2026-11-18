@@ -17,6 +17,7 @@ import { SettingsSheet } from '@/components/home/SettingsSheet'
 const TYPE_COLOR: Record<string, string> = {
   hiit: '#f0407a',
   circuit: '#4e8fff',
+  run: '#84cc16',
 }
 
 function relativeDate(ts: number): string {
@@ -34,7 +35,37 @@ function fmtDuration(sec: number): string {
   return m > 0 ? `${m}m ${s > 0 ? s + 's' : ''}`.trim() : `${s}s`
 }
 
+function newRunWorkout(): Workout {
+  // Starter template: walk warm-up, run/walk intervals, easy jog cool-down
+  return {
+    id: generateId(),
+    name: 'New Run',
+    type: 'run',
+    workTime: 60,
+    restTime: 0,
+    intervals: 1,
+    rounds: 1,
+    cycleBreak: 0,
+    warmup: 10,
+    cooldown: 0,
+    exerciseGroups: [
+      { id: generateId(), exercises: [{ id: generateId(), name: 'Walk', pace: 'walk', workTime: 300, notes: 'Warm up' }] },
+      {
+        id: generateId(),
+        rounds: 6,
+        exercises: [
+          { id: generateId(), name: 'Run', pace: 'run', workTime: 60 },
+          { id: generateId(), name: 'Walk', pace: 'walk', workTime: 90 },
+        ],
+      },
+      { id: generateId(), exercises: [{ id: generateId(), name: 'Jog', pace: 'jog', workTime: 300, notes: 'Cool down, easy pace' }] },
+    ],
+    createdAt: Date.now(),
+  }
+}
+
 function newWorkout(type: WorkoutType): Workout {
+  if (type === 'run') return newRunWorkout()
   return {
     id: generateId(),
     name: type === 'hiit' ? 'New HIIT' : 'New Circuit',

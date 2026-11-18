@@ -6,7 +6,7 @@ import type { Workout } from '@/types/workout'
 import { useWorkoutStore } from '@/store/workoutStore'
 import { TimerSettingsTab } from './TimerSettingsTab'
 import { ExercisesTab } from './ExercisesTab'
-import { computeTotalTime, formatDuration, generateId, accentText } from '@/lib/workoutUtils'
+import { computeTotalTime, formatDuration, generateId, accentText, usesGroups } from '@/lib/workoutUtils'
 import { shareUrl } from '@/lib/shareWorkout'
 
 type Tab = 'timer' | 'exercises'
@@ -92,7 +92,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
     setShowMenu(false)
   }
 
-  const tabs: Tab[] = workout.type === 'circuit' ? ['timer', 'exercises'] : ['timer']
+  const tabs: Tab[] = usesGroups(workout) ? ['timer', 'exercises'] : ['timer']
 
   return (
     <div className="flex flex-col h-full relative overflow-hidden" style={{ backgroundColor: '#12121a', minHeight: onClose ? undefined : '100dvh' }}>
@@ -197,7 +197,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
 
         {/* Type toggle */}
         <div className="flex items-center gap-1 mb-4 p-1 rounded-xl" style={{ backgroundColor: '#1e1e2a' }}>
-          {(['hiit', 'circuit'] as const).map((t) => (
+          {(['hiit', 'circuit', 'run'] as const).map((t) => (
             <button
               key={t}
               onClick={() => {
@@ -211,7 +211,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
                 boxShadow: workout.type === t ? `0 2px 14px ${accent}60` : 'none',
               }}
             >
-              {t === 'hiit' ? 'HIIT' : 'Circuit'}
+              {t === 'hiit' ? 'HIIT' : t === 'circuit' ? 'Circuit' : 'Run'}
             </button>
           ))}
         </div>
@@ -225,7 +225,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
               className="py-3 px-1 mr-7 text-xs font-semibold tracking-widest uppercase transition-colors relative"
               style={{ color: activeTab === tab ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.3)' }}
             >
-              {tab === 'timer' ? 'Timer' : 'Exercises'}
+              {tab === 'timer' ? 'Timer' : workout.type === 'run' ? 'Blocks' : 'Exercises'}
               {activeTab === tab && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ backgroundColor: accent }} />
               )}

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useTimer } from '@/hooks/useTimer'
 import { useWakeLock } from '@/hooks/useWakeLock'
 import { initAudio, setSoundEnabled, setVoiceEnabled as setAudioVoiceEnabled } from '@/lib/audio'
-import { formatDuration } from '@/lib/workoutUtils'
+import { formatDuration, usesGroups, PACE_COLOR, PACE_LABEL } from '@/lib/workoutUtils'
 import { haptic } from '@/lib/haptics'
 import { useWorkoutStore } from '@/store/workoutStore'
 import type { Workout, Phase } from '@/types/workout'
@@ -35,11 +35,20 @@ export function TimerDisplay({ workout }: Props) {
   const autoStartFired = useRef(false)
 
   const accentColor = workout.accentColor ?? '#f0407a'
+  const isRun = workout.type === 'run'
+  const hasGroups = usesGroups(workout)
+  const blockWord = isRun ? 'block' : 'superset'
+
+  // Run workouts colour and label each work step by its pace
+  const currentSeg = timer.segments[timer.segmentIndex]
+  const currentPace = isRun && currentSeg?.phase === 'work'
+    ? (workout.exerciseGroups ?? [])[currentSeg.groupIndex]?.exercises?.[currentSeg.exerciseIndex]?.pace
+    : undefined
 
   const PHASE_CONFIG: Record<Phase, { color: string; label: string }> = {
     idle:     { color: '#4b5a70', label: 'Ready' },
     warmup:   { color: '#4e8fff', label: 'Get Ready' },
-    work:     { color: accentColor, label: 'Work' },
+    work:     currentPace ? { color: PACE_COLOR[currentPace], label: PACE_LABEL[currentPace] } : { color: accentColor, label: 'Work' },
     rest:     { color: '#00d9a0', label: 'Rest' },
     break:    { color: '#4e8fff', label: 'Break' },
     cooldown: { color: '#a87dff', label: 'Cool Down' },
@@ -93,19 +102,28 @@ export function TimerDisplay({ workout }: Props) {
   const allSegsDur = timer.segments.reduce((s, seg) => s + seg.duration, 0)
   const workSegs = timer.segments.filter((s) => s.phase === 'work')
   const totalWorkDur = workSegs.reduce((s, seg) => s + seg.duration, 0)
+  // Run workouts report time spent jogging or running instead of all work
+  const runningDur = workSegs
+    .filter((seg) => {
+      const pace = (workout.exerciseGroups ?? [])[seg.groupIndex]?.exercises?.[seg.exerciseIndex]?.pace
+      return pace === 'run' || pace === 'jog'
+    })
+    .reduce((s, seg) => s + seg.duration, 0)
   const completionExCount = workout.type === 'circuit'
     ? (workout.exerciseGroups ?? []).flatMap((g) => g.exercises ?? []).length
-    : workSegs.length
-  const completionStatLabel = workout.type === 'circuit' ? 'Exercises' : 'Intervals'
+    : isRun
+      ? (workout.exerciseGroups ?? []).length
+      : workSegs.length
+  const completionStatLabel = workout.type === 'circuit' ? 'Exercises' : isRun ? 'Blocks' : 'Intervals'
 
   // Circuit exercise list
-  const currentGroupExercises = workout.type === 'circuit'
+  const currentGroupExercises = hasGroups
     ? (workout.exerciseGroups ?? [])[timer.currentGroup - 1]?.exercises ?? []
     : []
-  const nextGroupExercises = workout.type === 'circuit'
+  const nextGroupExercises = hasGroups
     ? (workout.exerciseGroups ?? [])[timer.currentGroup]?.exercises ?? []
     : []
-  const nextGroupRounds = workout.type === 'circuit'
+  const nextGroupRounds = hasGroups
     ? ((workout.exerciseGroups ?? [])[timer.currentGroup]?.rounds ?? workout.rounds)
     : workout.rounds
 
@@ -219,7 +237,7 @@ export function TimerDisplay({ workout }: Props) {
         </div>
         <span className="text-white/30 text-sm truncate max-w-[160px] @[600px]:max-w-xs">{workout.name}</span>
         <div className="min-w-[48px] flex flex-col items-end gap-1">
-          {showCounters && workout.type === 'circuit' && timer.totalGroups > 1 && (
+          {showCounters && hasGroups && timer.totalGroups > 1 && (
             <span className="text-white/55 text-sm font-semibold tabular-nums leading-tight">{displayGroup}/{timer.totalGroups}</span>
           )}
           {showCounters && (
@@ -256,7 +274,9 @@ export function TimerDisplay({ workout }: Props) {
                 <div className="grid grid-cols-2 gap-2.5 @[600px]:justify-start">
                   {[
                     { label: 'Duration', value: formatDuration(allSegsDur) },
-                    { label: 'Active work', value: formatDuration(totalWorkDur) },
+                    isRun
+                      ? { label: 'Jog + run', value: formatDuration(runningDur) }
+                      : { label: 'Active work', value: formatDuration(totalWorkDur) },
                     { label: 'Rounds', value: String(timer.totalRounds) },
                     { label: completionStatLabel, value: String(completionExCount) },
                   ].map(({ label, value }) => (
@@ -270,7 +290,7 @@ export function TimerDisplay({ workout }: Props) {
               </>
             ) : (
               <>
-                {timer.phase === 'work' && workout.type === 'circuit' ? (
+                {timer.phase === 'work' && hasGroups ? (
                   <>
                     <p className="text-white text-3xl font-semibold leading-snug">{timer.exerciseName}</p>
                     {currentGroupExercises[timer.exerciseIndex]?.notes && (
@@ -279,7 +299,7 @@ export function TimerDisplay({ workout }: Props) {
                   </>
                 ) : timer.phase === 'work' ? (
                   <p className="text-white/40 text-base font-light">{showCounters ? `Round ${timer.currentRound} of ${timer.totalRounds}` : 'Interval'}</p>
-                ) : timer.phase === 'rest' && workout.type === 'circuit' && timer.segments[timer.segmentIndex + 1]?.phase === 'work' ? (
+                ) : timer.phase === 'rest' && hasGroups && timer.segments[timer.segmentIndex + 1]?.phase === 'work' ? (
                   <>
                     <p className="text-white text-3xl font-semibold leading-snug">Next: {timer.segments[timer.segmentIndex + 1].label}</p>
                     {(() => {
@@ -290,19 +310,21 @@ export function TimerDisplay({ workout }: Props) {
                   </>
                 ) : timer.phase === 'rest' ? (
                   <p className="text-white/40 text-base font-light">{showCounters ? `Round ${timer.currentRound} of ${timer.totalRounds}` : 'Recover'}</p>
-                ) : timer.phase === 'break' && workout.type === 'circuit' ? (
+                ) : timer.phase === 'break' && hasGroups ? (
                   <>
-                    <p className="text-white/40 text-sm font-light tracking-wide uppercase">Next superset</p>
-                    <p className="text-white/25 text-xs mt-0.5">{nextGroupRounds} rounds · {workout.workTime}s work · {workout.restTime}s rest</p>
+                    <p className="text-white/40 text-sm font-light tracking-wide uppercase">Next {blockWord}</p>
+                    <p className="text-white/25 text-xs mt-0.5">
+                      {isRun ? `${nextGroupRounds}×` : `${nextGroupRounds} rounds · ${workout.workTime}s work · ${workout.restTime}s rest`}
+                    </p>
                   </>
                 ) : null}
 
                 {/* Circuit exercise list */}
-                {workout.type === 'circuit' && timer.phase === 'break' && nextGroupExercises.length > 0 ? (
+                {hasGroups && timer.phase === 'break' && nextGroupExercises.length > 0 ? (
                   <div className="mt-4 flex flex-col gap-3 @[600px]:text-left">
                     {nextGroupExercises.map((ex) => (
                       <div key={ex.id} className="flex items-start gap-3 py-1 px-2 rounded-lg -mx-2">
-                        <div className="w-2 h-2 rounded-full shrink-0 mt-3" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} />
+                        <div className="w-2 h-2 rounded-full shrink-0 mt-3" style={{ backgroundColor: ex.pace ? PACE_COLOR[ex.pace] : 'rgba(255,255,255,0.5)' }} />
                         <div>
                           <p className="text-2xl font-semibold leading-snug" style={{ color: 'rgba(255,255,255,0.9)' }}>{ex.name}</p>
                           {ex.notes && <p className="text-white/40 text-sm mt-0.5 italic leading-snug">{ex.notes}</p>}
@@ -310,16 +332,17 @@ export function TimerDisplay({ workout }: Props) {
                       </div>
                     ))}
                   </div>
-                ) : workout.type === 'circuit' && timer.phase !== 'break' && currentGroupExercises.length > 1 ? (
+                ) : hasGroups && timer.phase !== 'break' && currentGroupExercises.length > 1 ? (
                   <div className="mt-3 flex flex-col gap-0.5 @[600px]:text-left">
                     {currentGroupExercises.map((ex, i) => {
                       const isCurrent = i === timer.exerciseIndex && timer.phase === 'work'
                       const isDone = i < timer.exerciseIndex || (i === timer.exerciseIndex && timer.phase === 'rest')
+                      const rowColor = ex.pace ? PACE_COLOR[ex.pace] : accentColor
                       return (
                         <div key={ex.id} className="flex items-center gap-2 py-0.5 px-2 rounded-lg -mx-2 transition-colors"
-                          style={{ backgroundColor: isCurrent ? `${accentColor}18` : 'transparent' }}>
+                          style={{ backgroundColor: isCurrent ? `${rowColor}18` : 'transparent' }}>
                           <div className="w-1.5 h-1.5 rounded-full shrink-0 transition-colors"
-                            style={{ backgroundColor: isCurrent ? accentColor : isDone ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.1)' }} />
+                            style={{ backgroundColor: isCurrent ? rowColor : isDone ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.1)' }} />
                           <span className="text-sm transition-colors truncate"
                             style={{ color: isCurrent ? 'rgba(255,255,255,0.9)' : isDone ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.35)' }}>
                             {ex.name}
@@ -331,7 +354,7 @@ export function TimerDisplay({ workout }: Props) {
                 ) : null}
 
                 {/* Next up */}
-                {!(workout.type === 'circuit' && (timer.phase === 'break' ? nextGroupExercises.length > 0 : currentGroupExercises.length > 1)) && timer.segmentIndex < timer.segments.length - 1 && (
+                {!(hasGroups && (timer.phase === 'break' ? nextGroupExercises.length > 0 : currentGroupExercises.length > 1)) && timer.segmentIndex < timer.segments.length - 1 && (
                   <p className="text-white/35 text-xs mt-2">
                     Next — <span className="text-white/55">{timer.segments[timer.segmentIndex + 1].label} · {formatTime(timer.segments[timer.segmentIndex + 1].duration)}</span>
                   </p>
@@ -381,13 +404,13 @@ export function TimerDisplay({ workout }: Props) {
                   </button>
                 </div>
 
-                {/* Skip superset — circuit only, during break/work/rest */}
-                {workout.type === 'circuit' && (timer.phase === 'break' || timer.phase === 'work' || timer.phase === 'rest') && (
+                {/* Skip superset/block — grouped workouts only, during break/work/rest */}
+                {hasGroups && (timer.phase === 'break' || timer.phase === 'work' || timer.phase === 'rest') && (
                   <button
                     onClick={handleSkipSuperset}
                     className="w-full text-center text-white/20 text-xs tracking-wide transition-colors active:text-white/50 mb-4"
                   >
-                    Skip superset →
+                    Skip {blockWord} →
                   </button>
                 )}
 

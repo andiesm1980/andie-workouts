@@ -1,4 +1,13 @@
-import type { Workout } from '@/types/workout'
+import type { Workout, Pace } from '@/types/workout'
+
+export const PACES: Pace[] = ['walk', 'jog', 'run']
+export const PACE_LABEL: Record<Pace, string> = { walk: 'Walk', jog: 'Jog', run: 'Run' }
+export const PACE_COLOR: Record<Pace, string> = { walk: '#38bdf8', jog: '#fbbf24', run: '#f0407a' }
+
+// Circuit and run workouts are both built from exercise groups; only HIIT isn't
+export function usesGroups(workout: Pick<Workout, 'type'>): boolean {
+  return workout.type !== 'hiit'
+}
 
 export function computeTotalTime(workout: Workout): number {
   const rounds = Math.max(1, workout.rounds || 1)

@@ -48,7 +48,7 @@ function ShareContent() {
         </div>
 
         <h1 className="text-white text-2xl font-semibold text-center mb-2">{workout.name}</h1>
-        <p className="text-white/30 text-sm mb-8">{workout.type === 'hiit' ? 'HIIT' : 'Circuit'} · {formatDuration(total)}</p>
+        <p className="text-white/30 text-sm mb-8">{workout.type === 'hiit' ? 'HIIT' : workout.type === 'run' ? 'Run' : 'Circuit'} · {formatDuration(total)}</p>
 
         {/* Details */}
         <div className="w-full max-w-sm rounded-2xl p-5 mb-8" style={{ backgroundColor: '#13131a' }}>
@@ -67,7 +67,7 @@ function ShareContent() {
             ))}
           </div>
 
-          {workout.type === 'circuit' && (workout.exerciseGroups ?? []).length > 0 && (
+          {workout.type !== 'hiit' && (workout.exerciseGroups ?? []).length > 0 && (
             <div className="mt-5 pt-5" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
               {workout.exerciseGroups.map((g, i) => (
                 <div key={g.id} className={i > 0 ? 'mt-4' : ''}>
