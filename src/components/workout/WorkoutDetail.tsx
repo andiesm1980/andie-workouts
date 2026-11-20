@@ -29,6 +29,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
+  const [savedFlash, setSavedFlash] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
   const [showUnsaved, setShowUnsaved] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
@@ -44,7 +45,19 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
     if (isDirty) { setShowUnsaved(true) } else { goBack() }
   }
 
-  const handleSave = () => { setIsDirty(false); goBack() }
+  // Edits are already in the store; saving just makes this the version Discard reverts to
+  const commitSave = () => {
+    initialRef.current = workout
+    setIsDirty(false)
+  }
+
+  const handleSave = () => {
+    commitSave()
+    setSavedFlash(true)
+    setTimeout(() => setSavedFlash(false), 1500)
+  }
+
+  const handleSaveAndLeave = () => { commitSave(); goBack() }
 
   const handleDiscard = () => {
     updateWorkout(initialRef.current.id, initialRef.current)
@@ -168,8 +181,8 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
           </div>
 
           {/* Share copied toast */}
-          {shareCopied && (
-            <span className="text-xs shrink-0 transition-opacity" style={{ color: '#00d9a0' }}>Copied!</span>
+          {(shareCopied || savedFlash) && (
+            <span className="text-xs shrink-0 transition-opacity" style={{ color: '#00d9a0' }}>{savedFlash ? 'Saved' : 'Copied!'}</span>
           )}
 
           {/* Save button — visible when there are unsaved changes */}
@@ -400,7 +413,7 @@ export function WorkoutDetail({ workout: initial, onClose, onDuplicate }: Props)
             <p className="text-white text-lg font-semibold text-center mb-1">Unsaved changes</p>
             <p className="text-white/35 text-sm text-center mb-6">Do you want to save your changes to this workout?</p>
             <button
-              onClick={handleSave}
+              onClick={handleSaveAndLeave}
               className="w-full py-4 rounded-2xl font-semibold text-sm mb-3 transition-all active:scale-98"
               style={{ backgroundColor: accent, color: '#fff' }}
             >
