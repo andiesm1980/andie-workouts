@@ -97,6 +97,7 @@ interface WorkoutStore {
   sessions: CompletedSession[]
   soundEnabled: boolean
   voiceEnabled: boolean
+  timingDebug: boolean        // show countdown timing diagnostics on the timer screen
   reminderDays: number        // 0 = off, 7, 30, 90
   lastBackupAt: number        // ms timestamp of last real export
   reminderSnoozedAt: number   // ms timestamp of last dismiss (without export)
@@ -110,6 +111,7 @@ interface WorkoutStore {
   setSessions: (sessions: CompletedSession[]) => void
   setSoundEnabled: (v: boolean) => void
   setVoiceEnabled: (v: boolean) => void
+  setTimingDebug: (v: boolean) => void
   togglePin: (id: string) => void
   moveWorkout: (newOrder: Workout[]) => void
   setReminderDays: (days: number) => void
@@ -129,6 +131,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
       sessions: [],
       soundEnabled: true,
       voiceEnabled: true,
+      timingDebug: false,
       reminderDays: 30,
       lastBackupAt: 0,
       reminderSnoozedAt: 0,
@@ -158,6 +161,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
       setSessions: (sessions) => set({ sessions }),
       setSoundEnabled: (v) => set({ soundEnabled: v }),
       setVoiceEnabled: (v) => set({ voiceEnabled: v }),
+      setTimingDebug: (v) => set({ timingDebug: v }),
       togglePin: (id) =>
         set((state) => {
           const idx = state.workouts.findIndex((w) => w.id === id)

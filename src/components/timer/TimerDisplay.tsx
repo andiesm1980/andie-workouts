@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTimer } from '@/hooks/useTimer'
 import { useWakeLock } from '@/hooks/useWakeLock'
-import { initAudio, setSoundEnabled, setVoiceEnabled as setAudioVoiceEnabled } from '@/lib/audio'
-import { formatDuration, usesGroups, PACE_COLOR, PACE_LABEL } from '@/lib/workoutUtils'
+import { initAudio, setSoundEnabled, setVoiceEnabled as setAudioVoiceEnabled, setTimingDebug, subscribeTimingLog, getTimingLog } from '@/lib/audio'
+import { formatDuration, usesGroups, notesWithSets, PACE_COLOR, PACE_LABEL } from '@/lib/workoutUtils'
 import { haptic } from '@/lib/haptics'
 import { useWorkoutStore } from '@/store/workoutStore'
 import type { Workout, Phase } from '@/types/workout'
@@ -14,6 +14,25 @@ function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
   return `${m}:${s.toString().padStart(2, '0')}`
+}
+
+// Long exercise names step down in size and clamp to two lines so they can't
+// push the ring and controls off screen
+const NAME_SIZES = { lg: ['text-3xl', 'text-2xl', 'text-xl'], md: ['text-2xl', 'text-xl', 'text-lg'] }
+function nameClass(text: string, scale: keyof typeof NAME_SIZES) {
+  const step = text.length <= 22 ? 0 : text.length <= 40 ? 1 : 2
+  return `${NAME_SIZES[scale][step]} line-clamp-2 break-words`
+}
+
+function TimingDebugPanel() {
+  const lines = useSyncExternalStore(subscribeTimingLog, getTimingLog, getTimingLog)
+  return (
+    <div className="absolute left-2 right-2 bottom-2 z-40 rounded-xl px-3 py-2 pointer-events-none font-mono text-[10px] leading-relaxed"
+      style={{ backgroundColor: 'rgba(0,0,0,0.75)', color: 'rgba(255,255,255,0.7)' }}>
+      <p className="text-white/40">Timing diagnostics · gaps should be 1000 ms</p>
+      {lines.length === 0 ? <p className="text-white/30">Waiting for a countdown…</p> : lines.map((l, i) => <p key={i}>{l}</p>)}
+    </div>
+  )
 }
 
 const RADIUS = 80
@@ -30,7 +49,7 @@ export function TimerDisplay({ workout }: Props) {
   const timer = useTimer(workout)
   useWakeLock(timer.isRunning)
   const [showQuitConfirm, setShowQuitConfirm] = useState(false)
-  const { soundEnabled, setSoundEnabled: storeSoundEnabled, voiceEnabled, setVoiceEnabled: storeSetVoiceEnabled, recordSession } = useWorkoutStore()
+  const { soundEnabled, setSoundEnabled: storeSoundEnabled, voiceEnabled, setVoiceEnabled: storeSetVoiceEnabled, recordSession, timingDebug } = useWorkoutStore()
   const sessionRecorded = useRef(false)
   const autoStartFired = useRef(false)
 
@@ -57,6 +76,7 @@ export function TimerDisplay({ workout }: Props) {
 
   useEffect(() => { setSoundEnabled(soundEnabled) }, [soundEnabled])
   useEffect(() => { setAudioVoiceEnabled(voiceEnabled) }, [voiceEnabled])
+  useEffect(() => { setTimingDebug(timingDebug) }, [timingDebug])
   const toggleVoice = () => storeSetVoiceEnabled(!voiceEnabled)
 
   useEffect(() => {
@@ -154,6 +174,9 @@ export function TimerDisplay({ workout }: Props) {
         </p>
         {!timer.isComplete && timer.phase !== 'idle' && (
           <p className="text-xs font-semibold tracking-widest uppercase transition-colors duration-500" style={{ color }}>{label}</p>
+        )}
+        {!timer.isComplete && (
+          <p className="text-white/35 text-[11px] tabular-nums mt-0.5">{formatTime(workoutRemaining)} left</p>
         )}
       </div>
     </div>
@@ -292,20 +315,32 @@ export function TimerDisplay({ workout }: Props) {
               <>
                 {timer.phase === 'work' && hasGroups ? (
                   <>
-                    <p className="text-white text-3xl font-semibold leading-snug">{timer.exerciseName}</p>
+                    <p className={`text-white font-semibold leading-snug ${nameClass(timer.exerciseName, 'lg')}`}>{timer.exerciseName}</p>
                     {currentGroupExercises[timer.exerciseIndex]?.notes && (
-                      <p className="text-white/40 text-sm mt-1 italic leading-snug">{currentGroupExercises[timer.exerciseIndex].notes}</p>
+                      <p className="text-white/40 text-sm mt-1 italic leading-snug line-clamp-2">
+                        {notesWithSets(currentGroupExercises[timer.exerciseIndex].notes!, timer.totalRounds)}
+                      </p>
                     )}
                   </>
                 ) : timer.phase === 'work' ? (
                   <p className="text-white/40 text-base font-light">{showCounters ? `Round ${timer.currentRound} of ${timer.totalRounds}` : 'Interval'}</p>
                 ) : timer.phase === 'rest' && hasGroups && timer.segments[timer.segmentIndex + 1]?.phase === 'work' ? (
                   <>
-                    <p className="text-white text-3xl font-semibold leading-snug">Next: {timer.segments[timer.segmentIndex + 1].label}</p>
                     {(() => {
                       const ns = timer.segments[timer.segmentIndex + 1]
-                      const nex = (workout.exerciseGroups ?? [])[ns.groupIndex]?.exercises?.[ns.exerciseIndex]
-                      return nex?.notes ? <p className="text-white/40 text-sm mt-1 italic leading-snug">{nex.notes}</p> : null
+                      const nextText = `Next: ${ns.label}`
+                      const ngroup = (workout.exerciseGroups ?? [])[ns.groupIndex]
+                      const nex = ngroup?.exercises?.[ns.exerciseIndex]
+                      return (
+                        <>
+                          <p className={`text-white font-semibold leading-snug ${nameClass(nextText, 'lg')}`}>{nextText}</p>
+                          {nex?.notes && (
+                            <p className="text-white/40 text-sm mt-1 italic leading-snug line-clamp-2">
+                              {notesWithSets(nex.notes, ngroup?.rounds ?? workout.rounds)}
+                            </p>
+                          )}
+                        </>
+                      )
                     })()}
                   </>
                 ) : timer.phase === 'rest' ? (
@@ -326,8 +361,8 @@ export function TimerDisplay({ workout }: Props) {
                       <div key={ex.id} className="flex items-start gap-3 py-1 px-2 rounded-lg -mx-2">
                         <div className="w-2 h-2 rounded-full shrink-0 mt-3" style={{ backgroundColor: ex.pace ? PACE_COLOR[ex.pace] : 'rgba(255,255,255,0.5)' }} />
                         <div>
-                          <p className="text-2xl font-semibold leading-snug" style={{ color: 'rgba(255,255,255,0.9)' }}>{ex.name}</p>
-                          {ex.notes && <p className="text-white/40 text-sm mt-0.5 italic leading-snug">{ex.notes}</p>}
+                          <p className={`font-semibold leading-snug ${nameClass(ex.name, 'md')}`} style={{ color: 'rgba(255,255,255,0.9)' }}>{ex.name}</p>
+                          {ex.notes && <p className="text-white/40 text-sm mt-0.5 italic leading-snug line-clamp-2">{notesWithSets(ex.notes, nextGroupRounds)}</p>}
                         </div>
                       </div>
                     ))}
@@ -434,6 +469,8 @@ export function TimerDisplay({ workout }: Props) {
           </div>
         </div>
       </div>
+
+      {timingDebug && <TimingDebugPanel />}
 
       {/* Quit confirm sheet */}
       {showQuitConfirm && (

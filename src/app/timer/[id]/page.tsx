@@ -17,7 +17,7 @@ export default function TimerPage({ params }: Props) {
   // Zustand v5 persist rehydrates asynchronously. On the first render the store
   // holds DEFAULT_WORKOUTS, so `workout` is undefined even for valid IDs.
   // We must wait for hydration before deciding the workout doesn't exist.
-  const [hydrated, setHydrated] = useState(() => useWorkoutStore.persist.hasHydrated())
+  const [hydrated, setHydrated] = useState(() => useWorkoutStore.persist?.hasHydrated() ?? false)
 
   useEffect(() => {
     if (hydrated) return

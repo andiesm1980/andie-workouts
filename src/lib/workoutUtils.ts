@@ -9,6 +9,12 @@ export function usesGroups(workout: Pick<Workout, 'type'>): boolean {
   return workout.type !== 'hiit'
 }
 
+// Exercise notes may spell out a set count ("2 sets of 10 to 12 reps"); show the
+// rounds actually configured for the group instead, so edits stay in sync
+export function notesWithSets(notes: string, rounds: number): string {
+  return notes.replace(/\b\d+\s+sets?\b/i, `${rounds} ${rounds === 1 ? 'set' : 'sets'}`)
+}
+
 export function computeTotalTime(workout: Workout): number {
   const rounds = Math.max(1, workout.rounds || 1)
   const cycleBreak = workout.cycleBreak || 0

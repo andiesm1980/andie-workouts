@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function SettingsSheet({ isOpen, onClose }: Props) {
-  const { workouts, sessions, reminderDays, lastBackupAt, setReminderDays, setLastBackupAt, moveWorkout, setSessions, setReminders } = useWorkoutStore()
+  const { workouts, sessions, reminderDays, lastBackupAt, setReminderDays, setLastBackupAt, moveWorkout, setSessions, setReminders, timingDebug, setTimingDebug } = useWorkoutStore()
   const drive = useDrive()
   const [tokenCopied, setTokenCopied] = useState(false)
 
@@ -147,6 +147,25 @@ export function SettingsSheet({ isOpen, onClose }: Props) {
             Last backup: {new Date(lastBackupAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
           </p>
         )}
+        <button
+          onClick={() => setTimingDebug(!timingDebug)}
+          className="flex items-center justify-between w-full py-3.5 px-4 rounded-2xl mb-6 text-left"
+          style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}
+          role="switch"
+          aria-checked={timingDebug}
+        >
+          <span>
+            <span className="block text-white text-sm font-medium">Timing diagnostics</span>
+            <span className="block text-white/30 text-xs mt-0.5">Show countdown beep timing on the timer</span>
+          </span>
+          <span className="relative shrink-0" style={{ width: 44, height: 26 }}>
+            <span className="absolute inset-0 rounded-full transition-colors duration-200"
+              style={{ backgroundColor: timingDebug ? '#f0407a' : 'rgba(255,255,255,0.12)' }} />
+            <span className="absolute top-[3px] rounded-full transition-all duration-200"
+              style={{ width: 20, height: 20, backgroundColor: '#fff', left: timingDebug ? 21 : 3 }} />
+          </span>
+        </button>
+
         <button
           onClick={onClose}
           className="w-full py-3 text-sm transition-colors"

@@ -14,7 +14,7 @@ export default function WorkoutPage({ params }: Props) {
   const router = useRouter()
   const workout = useWorkoutStore((s) => s.workouts.find((w) => w.id === id))
 
-  const [hydrated, setHydrated] = useState(() => useWorkoutStore.persist.hasHydrated())
+  const [hydrated, setHydrated] = useState(() => useWorkoutStore.persist?.hasHydrated() ?? false)
 
   useEffect(() => {
     if (hydrated) return

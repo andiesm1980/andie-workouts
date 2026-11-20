@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import type { Workout, Phase } from '@/types/workout'
-import { playCountdownBeep, playPhaseStart, playComplete, speakText } from '@/lib/audio'
+import { scheduleCountdown, playPhaseStart, playComplete, speakText, stopSpeech, initAudio, logTiming } from '@/lib/audio'
 import { haptic } from '@/lib/haptics'
-import { usesGroups } from '@/lib/workoutUtils'
+import { usesGroups, notesWithSets } from '@/lib/workoutUtils'
 
 interface Segment {
   phase: Exclude<Phase, 'idle' | 'complete'>
@@ -105,24 +105,37 @@ export function useTimer(workout: Workout) {
   // previous segment's end (not Date.now()) so segments never accumulate drift.
   const endAtRef = useRef<number>(0)
 
-  // setTimeout IDs for the 3-2-1 countdown beeps, scheduled precisely
-  // relative to endAtRef so they fire exactly when the second changes.
+  // The 3-2-1 beeps themselves play on the audio clock (scheduleCountdown); these
+  // setTimeouts only arm them a few seconds ahead and drive the haptics, where a
+  // little JS timer jitter doesn't matter.
   const beepTimers = useRef<ReturnType<typeof setTimeout>[]>([])
+  const cancelCountdownRef = useRef<(() => void) | null>(null)
 
   const clearBeeps = useCallback(() => {
     beepTimers.current.forEach(clearTimeout)
     beepTimers.current = []
+    cancelCountdownRef.current?.()
+    cancelCountdownRef.current = null
   }, [])
 
   const scheduleBeeps = useCallback((endAt: number) => {
     clearBeeps()
     const nowMs = Date.now()
-    beepTimers.current = [3, 2, 1].flatMap((sec) => {
+    // Arm close to the countdown so an audio interruption earlier in the segment can't shift it
+    const arm = () => { cancelCountdownRef.current = scheduleCountdown(endAt) }
+    const armDelay = endAt - nowMs - 4500
+    if (armDelay <= 0) arm()
+    else beepTimers.current.push(setTimeout(arm, armDelay))
+    beepTimers.current.push(...[3, 2, 1].flatMap((sec) => {
       const delay = endAt - nowMs - sec * 1000
       if (delay < 0) return []
-      return [setTimeout(() => { playCountdownBeep(); haptic('countdown') }, delay)]
-    })
+      // Cut any long spoken note so it doesn't talk over the countdown
+      return [setTimeout(() => { if (sec === 3) stopSpeech(); haptic('countdown') }, delay)]
+    }))
   }, [clearBeeps])
+
+  // Stop pending beeps when leaving the timer some other way than Quit (e.g. back gesture)
+  useEffect(() => clearBeeps, [clearBeeps])
 
   const advanceSegment = useCallback((fromIndex: number, segs: Segment[]) => {
     const nextIndex = fromIndex + 1
@@ -142,10 +155,11 @@ export function useTimer(workout: Workout) {
       if (nextPhase === 'work' && nextLabel !== 'Work') {
         const nextSeg = segs[nextIndex]
         const key = `${nextSeg.groupIndex}-${nextSeg.exerciseIndex}`
-        const ex = workoutRef.current.exerciseGroups?.[nextSeg.groupIndex]?.exercises?.[nextSeg.exerciseIndex]
+        const group = workoutRef.current.exerciseGroups?.[nextSeg.groupIndex]
+        const ex = group?.exercises?.[nextSeg.exerciseIndex]
         if (ex?.notes && !spokenNotesRef.current.has(key)) {
           spokenNotesRef.current.add(key)
-          speakText(`${nextLabel}. ${ex.notes}`)
+          speakText(`${nextLabel}. ${notesWithSets(ex.notes, group?.rounds ?? workoutRef.current.rounds)}`)
         } else {
           speakText(nextLabel)
         }
@@ -154,27 +168,73 @@ export function useTimer(workout: Workout) {
     }
   }, [clearBeeps, scheduleBeeps])
 
+  // After the page was hidden or timers were throttled, several segments may have
+  // ended. Jump straight to the right one instead of replaying each transition's
+  // sounds and speech in a burst.
+  const catchUp = useCallback((fromIndex: number, segs: Segment[]) => {
+    const now = Date.now()
+    const lateSec = Math.round((now - endAtRef.current) / 1000)
+    let idx = fromIndex
+    let end = endAtRef.current
+    while (end <= now && idx < segs.length - 1) {
+      idx++
+      end += segs[idx].duration * 1000
+    }
+    logTiming(`caught up ${idx - fromIndex} segment(s), ${lateSec} s late`)
+    if (end <= now) {
+      clearBeeps()
+      setState((s) => ({ ...s, segmentIndex: segs.length - 1, isRunning: false, isComplete: true, timeRemaining: 0 }))
+      playComplete(); haptic('complete')
+      return
+    }
+    endAtRef.current = end
+    scheduleBeeps(end)
+    playPhaseStart()
+    setState((s) => ({ ...s, segmentIndex: idx, timeRemaining: Math.ceil((end - now) / 1000) }))
+  }, [clearBeeps, scheduleBeeps])
+
   const tick = useCallback(() => {
     const { segmentIndex, isRunning, isComplete } = stateRef.current
     const segs = segmentsRef.current
     if (!isRunning || isComplete) return
 
-    const remaining = Math.max(0, Math.ceil((endAtRef.current - Date.now()) / 1000))
+    const remainingMs = endAtRef.current - Date.now()
 
-    if (remaining > 0) {
-      setState((s) => ({ ...s, timeRemaining: remaining }))
-    } else {
+    if (remainingMs > 0) {
+      setState((s) => ({ ...s, timeRemaining: Math.ceil(remainingMs / 1000) }))
+    } else if (remainingMs > -2000) {
       advanceSegment(segmentIndex, segs)
+    } else {
+      catchUp(segmentIndex, segs)
     }
-  }, [advanceSegment])
+  }, [advanceSegment, catchUp])
 
   const tickRef = useRef(tick)
   tickRef.current = tick
 
   useEffect(() => {
     if (!state.isRunning) return
-    const id = setInterval(() => tickRef.current(), 500)
-    return () => clearInterval(id)
+    let id: ReturnType<typeof setTimeout>
+    // Wake just after the displayed second flips (relative to the segment end),
+    // so the number changes in step with the beeps instead of up to 500 ms late
+    const loop = () => {
+      tickRef.current()
+      const r = endAtRef.current - Date.now()
+      id = setTimeout(loop, (((r % 1000) + 1000) % 1000) + 15)
+    }
+    id = setTimeout(loop, 0)
+    // Coming back to the foreground: resume audio and resync immediately
+    const onVisibility = () => {
+      if (document.hidden) return
+      initAudio()
+      clearTimeout(id)
+      loop()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      clearTimeout(id)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [state.isRunning])
 
   const start = useCallback(() => {
